@@ -462,16 +462,28 @@ namespace Mayo {
         m_trajectoryShape->SetWidth(5);
         ctx->Display(m_trajectoryShape, Standard_False);
 
+        
+
+        // 新增：用“沿操纵器轴方向的投影”作为带符号距离
+        const gp_Vec v(startPoint, endPoint);                 // 位移向量
+        const gp_Vec axisVec(rotationAxis.Direction());
+
+        // signedDistance 是“沿轴方向”的带符号位移
+        // >0: 沿轴正向；<0: 沿轴反向
+        Standard_Real signedDistance = v.Dot(axisVec);
+
+
         // 在终点显示移动距离
-        Standard_Real distance = startPoint.Distance(endPoint);
-        if ((std::abs(endPoint.X() - startPoint.X()) > 1e-6 && endPoint.X() < startPoint.X()) ||
-            (std::abs(endPoint.Y() - startPoint.Y()) > 1e-6 && endPoint.Y() < startPoint.Y()) ||
-            (std::abs(endPoint.Z() - startPoint.Z()) > 1e-6 && endPoint.Z() < startPoint.Z())) {
-        //if (endPoint.X() < startPoint.X() || endPoint.Y() < startPoint.Y() || endPoint.Z() < startPoint.Z()) {
-            distance = - distance;
-        }
+        /*Standard_Real distance = startPoint.Distance(endPoint);*/
+
+        //if ((std::abs(endPoint.X() - startPoint.X()) > 1e-6 && endPoint.X() < startPoint.X()) ||
+        //    (std::abs(endPoint.Y() - startPoint.Y()) > 1e-6 && endPoint.Y() < startPoint.Y()) ||
+        //    (std::abs(endPoint.Z() - startPoint.Z()) > 1e-6 && endPoint.Z() < startPoint.Z())) {
+        ////if (endPoint.X() < startPoint.X() || endPoint.Y() < startPoint.Y() || endPoint.Z() < startPoint.Z()) {
+        //    distance = - distance; 
+        //}
         m_label = new AIS_TextLabel();
-        std::string distanceStr = "Distance: " + std::to_string(distance) + " mm";
+        std::string distanceStr = "Distance: " + std::to_string(signedDistance) + " mm";
         m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
         gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
        /* qInfo() << "ShowTransformTrajectory midPoing (x,y,z):" << midPoint.X() << ", " << midPoint.Y() << ", " << midPoint.Z();
@@ -846,7 +858,26 @@ namespace Mayo {
                                     m_posTransform.SetY(displacement.Y() * 1000);
                                     m_posTransform.SetZ(displacement.Z() * 1000);
 
-                                    gp_Ax1 axis1;
+                                    // 新增：平移模式下：给 ShowTransformTrajectory 传入“当前激活轴”的方向
+                                    // 取操纵器当前坐标系（世界坐标下）
+                                    const gp_Ax2 manipAx2 = m_aManipulator->Position();
+
+                                    // 根据 ActiveAxisIndex 取对应方向（世界坐标下的单位方向）
+                                    gp_Dir axisDir;
+                                    if (tmpActiveAxisIndex == 0) {
+                                        axisDir = manipAx2.XDirection();       // X
+                                    }
+                                    else if (tmpActiveAxisIndex == 1) {
+                                        axisDir = manipAx2.YDirection();       // Y
+                                    }
+                                    else { // tmpActiveAxisIndex == 2
+                                        axisDir = manipAx2.Direction();        // Z（gp_Ax2::Direction() 是主方向）
+                                    }
+
+                                    // 用初始位置 + 轴方向构造 gp_Ax1
+                                    const gp_Ax1 axis1(m_initialPosition, axisDir);
+                                    
+                                    /*gp_Ax1 axis1;*/
                                     ShowTransformTrajectory(m_context, axis1, m_initialPosition, currentPosition);
                                 }
                             }
@@ -995,6 +1026,7 @@ namespace Mayo {
                                 m_posTransform.SetY(axis.Y());
                                 m_posTransform.SetZ(angle * 180.0 / M_PI);
 
+                                // 1) 当前操纵器选中的旋转轴
                                 gp_Vec axisRotation;
                                 if (0 == tmpActiveAxisIndex)
                                 {
@@ -1008,17 +1040,38 @@ namespace Mayo {
                                 {
                                     axisRotation = m_aManipulator->Position().XDirection().Crossed(m_aManipulator->Position().YDirection());
                                 }
-                                gp_Ax1 axis1(currentPosition, axisRotation);
-                                tmpRotationAxis = axis1;
+                                //gp_Ax1 axis1(currentPosition, axisRotation);
+                                //tmpRotationAxis = axis1;
 
-                                if ((std::abs(axis.X()) > 1e-6 && axis.X() < 0) ||
-                                    (std::abs(axis.Y()) > 1e-6 && axis.Y() < 0) ||
-                                    (std::abs(axis.Z()) > 1e-6 && axis.Z() < 0)) {
-                                    ShowRotationTrajectory(m_context, axis1, 0.0, -angle);
+                                axisRotation.Normalize();
+
+                                // 2) deltaRotation 轴角分解得到的 axis/angle
+                                gp_Vec deltaAxis = axis;
+                                if (deltaAxis.Magnitude() > 1e-12) {
+                                    deltaAxis.Normalize();
                                 }
-                                else {
-                                    ShowRotationTrajectory(m_context, axis1, 0.0, angle);
+
+                                // 3) 用 dot 决定符号（绑定到操纵器轴，不看世界坐标分量）
+                                double signedAngle = angle;
+                                if (deltaAxis.Dot(axisRotation) < 0.0) {
+                                    signedAngle = -angle;
                                 }
+
+                                // 4) 直接把 signedAngle 交给 ShowRotationTrajectory
+                                gp_Ax1 axis1(currentPosition, axisRotation);
+                                ShowRotationTrajectory(m_context, axis1, 0.0, signedAngle);
+
+
+
+
+                                //if ((std::abs(axis.X()) > 1e-6 && axis.X() < 0) ||
+                                //    (std::abs(axis.Y()) > 1e-6 && axis.Y() < 0) ||
+                                //    (std::abs(axis.Z()) > 1e-6 && axis.Z() < 0)) {
+                                //    ShowRotationTrajectory(m_context, axis1, 0.0, -angle);
+                                //}
+                                //else {
+                                //    ShowRotationTrajectory(m_context, axis1, 0.0, angle);
+                                //}
                                 //ShowRotationTrajectory(m_context, axis1, 0.0, angle);
                                 /*startAngle = angle;*/
                             }
@@ -1065,6 +1118,7 @@ namespace Mayo {
             this->signalMouseButtonClicked.send(fnOccMouseBtn(event->button()));
 
         if (m_context && (!m_label.IsNull() || !m_rolabel.IsNull())) {
+
 
             m_context->InitSelected();
             if (m_context->MoreSelected()) {
