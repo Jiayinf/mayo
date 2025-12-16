@@ -1,0 +1,51 @@
+name: macOS
+
+on: [push]
+
+jobs:
+    build-macos:
+        strategy:
+            matrix:
+                include:
+                    - qt_version_name: 5.15
+                      qt_version_major: 5
+                    - qt_version_name: 6.7
+                      qt_version_major: 6
+
+        runs-on: macos-latest
+        name: build-macos-qt${{matrix.qt_version_name}}
+
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+
+        - name: Install Qt
+          run: brew install qt@${{matrix.qt_version_major}}
+
+        - name: Install OpenCascade
+          run: brew install opencascade
+
+        - name: Install Assimp
+          run: brew install assimp
+
+        - name: Get count of CPU cores
+          uses: SimenB/github-actions-cpu-cores@v1
+          id: cpu-cores
+
+        - name: Build
+          run: |
+              mkdir ${{github.workspace}}/build
+              cd ${{github.workspace}}/build
+              cmake --version
+              cmake .. \
+                    -DMayo_BuildTests=ON \
+                    -DMayo_BuildPluginAssimp=ON \
+                    -DQT_DIR=$(brew --prefix qt@${{matrix.qt_version_major}})/lib/cmake/Qt${{matrix.qt_version_major}}
+              cmake --build . \
+                    --config Release \
+                    --parallel ${{steps.cpu-cores.outputs.count}}
+
+        - name: Execute Unit Tests
+          working-directory: ${{github.workspace}}/build
+          run: |
+              ./mayo.app/Contents/MacOS/mayo --runtests

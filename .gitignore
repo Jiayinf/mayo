@@ -1,0 +1,17 @@
+# Build
+build_d/
+build/
+out/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# MSVC
+*.obj
+*.pdb
+*.ilk
+*.sdf
+*.opensdf
+*.vcxproj.user
