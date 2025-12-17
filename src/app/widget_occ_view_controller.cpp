@@ -490,6 +490,8 @@ namespace Mayo {
         qInfo() << "ShowTransformTrajectory startPoint(X,Y,Z):" << startPoint.X() << " , " << startPoint.Y() << " , " << startPoint.Z() << " , ";
         qInfo() << "ShowTransformTrajectory endPoint(X,Y,Z):" << endPoint.X() << " , " << endPoint.Y() << " , " << endPoint.Z() << " , ";*/
         m_label->SetPosition(midPoint);
+
+        m_label->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->Display(m_label, Standard_False);
 
         // 算方向向量
@@ -1146,11 +1148,26 @@ namespace Mayo {
                         QStringList qlist = currentText.split(" ");
                         m_editLine->setText(qlist[1]);
 
-                        QPoint editPoint;
+                        /*QPoint editPoint;
                         editPoint.setX(QCursor::pos().x());
                         editPoint.setY(QCursor::pos().y() - 50);
-                        m_editLine->move(editPoint);
+                        m_editLine->move(editPoint);*/
                         //qInfo() << "QCursor::pos():" << QCursor::pos();
+
+                        // 1) global -> parentWidget local
+                        const QPoint globalPos = QCursor::pos();
+                        QPoint localPos = parentWidget->mapFromGlobal(globalPos);
+
+                        // 2) 原来是 y-50，这里保持同样 向上偏移
+                        localPos += QPoint(0, -50);
+
+                        // 3) 边界裁剪，避免出界
+                        const QSize sz = m_editLine->size();
+                        localPos.setX(std::clamp(localPos.x(), 0, parentWidget->width() - sz.width()));
+                        localPos.setY(std::clamp(localPos.y(), 0, parentWidget->height() - sz.height()));
+
+                        m_editLine->move(localPos);
+
 
                         m_editLine->show();       // 显示
                         m_editLine->raise();      // 放到最上层
