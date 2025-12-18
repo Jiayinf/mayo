@@ -404,6 +404,10 @@ namespace Mayo {
         m_rolabel->SetText(TCollection_ExtendedString(std::to_string(distance).c_str()));
         //m_rolabel->SetPosition(rotationAxis.Location().XYZ() + rotationAxis.Direction().XYZ() * 1.2);
         m_rolabel->SetPosition(middlePoint.XYZ());
+        
+        // 关键：放到最顶层
+        m_rolabel->SetZLayer(Graphic3d_ZLayerId_Topmost);
+
         ctx->Display(m_rolabel, Standard_False);
 
        /* Handle(Geom_Axis1Placement) axisGeom =
@@ -464,34 +468,58 @@ namespace Mayo {
 
         
 
-        // 新增：用“沿操纵器轴方向的投影”作为带符号距离
-        const gp_Vec v(startPoint, endPoint);                 // 位移向量
-        const gp_Vec axisVec(rotationAxis.Direction());
+        //// 新增：用“沿操纵器轴方向的投影”作为带符号距离
+        //const gp_Vec v(startPoint, endPoint);                 // 位移向量
+        //const gp_Vec axisVec(rotationAxis.Direction());
 
-        // signedDistance 是“沿轴方向”的带符号位移
-        // >0: 沿轴正向；<0: 沿轴反向
+        //// signedDistance 是“沿轴方向”的带符号位移
+        //// >0: 沿轴正向；<0: 沿轴反向
+        //Standard_Real signedDistance = v.Dot(axisVec);
+
+
+        //// 在终点显示移动距离
+        ///*Standard_Real distance = startPoint.Distance(endPoint);*/
+
+        ////if ((std::abs(endPoint.X() - startPoint.X()) > 1e-6 && endPoint.X() < startPoint.X()) ||
+        ////    (std::abs(endPoint.Y() - startPoint.Y()) > 1e-6 && endPoint.Y() < startPoint.Y()) ||
+        ////    (std::abs(endPoint.Z() - startPoint.Z()) > 1e-6 && endPoint.Z() < startPoint.Z())) {
+        //////if (endPoint.X() < startPoint.X() || endPoint.Y() < startPoint.Y() || endPoint.Z() < startPoint.Z()) {
+        ////    distance = - distance; 
+        ////}
+        //m_label = new AIS_TextLabel();
+        //std::string distanceStr = "Distance: " + std::to_string(signedDistance) + " mm";
+        //m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
+
+        const gp_Vec v(startPoint, endPoint);
+        const gp_Vec axisVec(rotationAxis.Direction());
         Standard_Real signedDistance = v.Dot(axisVec);
 
+        // 避免 -0.000000 之类的显示
+        if (std::abs(signedDistance) < 1e-9) {
+            signedDistance = 0.0;
+        }
 
-        // 在终点显示移动距离
-        /*Standard_Real distance = startPoint.Distance(endPoint);*/
+        // 按固定小数位输出，避免 std::to_string 冗长
+        std::ostringstream oss;
+        oss.setf(std::ios::fixed);
+        oss << std::setprecision(3) << signedDistance;
+        std::string distanceStr = "Distance: " + oss.str() + " mm";
 
-        //if ((std::abs(endPoint.X() - startPoint.X()) > 1e-6 && endPoint.X() < startPoint.X()) ||
-        //    (std::abs(endPoint.Y() - startPoint.Y()) > 1e-6 && endPoint.Y() < startPoint.Y()) ||
-        //    (std::abs(endPoint.Z() - startPoint.Z()) > 1e-6 && endPoint.Z() < startPoint.Z())) {
-        ////if (endPoint.X() < startPoint.X() || endPoint.Y() < startPoint.Y() || endPoint.Z() < startPoint.Z()) {
-        //    distance = - distance; 
-        //}
         m_label = new AIS_TextLabel();
-        std::string distanceStr = "Distance: " + std::to_string(signedDistance) + " mm";
         m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
+
+
+
+
         gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
-       /* qInfo() << "ShowTransformTrajectory midPoing (x,y,z):" << midPoint.X() << ", " << midPoint.Y() << ", " << midPoint.Z();
+       /* qInfo() << "ShowTransformTrajectory midPoing (x,y,z):" << midPoint.X() << ", " j << midPoint.Y() << ", " << midPoint.Z();
         qInfo() << "ShowTransformTrajectory startPoint(X,Y,Z):" << startPoint.X() << " , " << startPoint.Y() << " , " << startPoint.Z() << " , ";
         qInfo() << "ShowTransformTrajectory endPoint(X,Y,Z):" << endPoint.X() << " , " << endPoint.Y() << " , " << endPoint.Z() << " , ";*/
         m_label->SetPosition(midPoint);
 
+		// 关键：在 Display 之前设置 ZLayer，并放到最顶层
         m_label->SetZLayer(Graphic3d_ZLayerId_Topmost);
+
         ctx->Display(m_label, Standard_False);
 
         // 算方向向量
@@ -1161,10 +1189,10 @@ namespace Mayo {
                         // 2) 原来是 y-50，这里保持同样 向上偏移
                         localPos += QPoint(0, -50);
 
-                        // 3) 边界裁剪，避免出界
-                        const QSize sz = m_editLine->size();
-                        localPos.setX(std::clamp(localPos.x(), 0, parentWidget->width() - sz.width()));
-                        localPos.setY(std::clamp(localPos.y(), 0, parentWidget->height() - sz.height()));
+                        //// 3) 边界裁剪，避免出界
+                        //const QSize sz = m_editLine->size();
+                        //localPos.setX(std::clamp(localPos.x(), 0, parentWidget->width() - sz.width()));
+                        //localPos.setY(std::clamp(localPos.y(), 0, parentWidget->height() - sz.height()));
 
                         m_editLine->move(localPos);
 
@@ -1176,120 +1204,214 @@ namespace Mayo {
 
                         //qInfo() << "handleMouseButtonRelease create m_label!!!";
 
+
                         connect(m_editLine, &QLineEdit::editingFinished, this, [this]() {
-                            QString distanceText = m_editLine->text();
-                            QString text = "Distance: " + distanceText + " mm";
-                            //qInfo() << "distanceText:" << text;
+                            const QString distanceText = m_editLine->text().trimmed();
+                            if (distanceText.isEmpty() || m_label.IsNull()) {
+                                delete m_editLine;
+                                m_editLine = nullptr;
+                                return;
+                            }
 
-                            if (!text.isEmpty() && !m_label.IsNull()&& m_editLine->hasFocus()) {
-                                
-                                // 移动
-                                gp_Pnt midPoint = m_label->Position();
-                                gp_Ax2 tmpEndAx2 = m_aManipulator->Position();
-                                gp_Pnt endPoint = tmpEndAx2.Location();
-                                Standard_Real midDistance = midPoint.Distance(endPoint);
+                            bool ok = false;
+                            const double distanceMm = distanceText.toDouble(&ok);
+                            if (!ok) {
+                                delete m_editLine;
+                                m_editLine = nullptr;
+                                return;
+                            }
 
-                                gp_Vec vec(midPoint, endPoint);
-                                gp_Dir dir(vec);
-                                gp_Dir revDir = dir.Reversed();
-                                gp_Pnt startPoint = midPoint.Translated(gp_Vec(revDir) * midDistance);
-                                // 恢复初始点
-                                m_initialPosition = startPoint;
-                                //qInfo() << "distanceText:" << distanceText.toDouble();
-                                double distanceDouble = distanceText.toDouble();
-                                gp_Pnt newEndPoint;
-                                // 前一次是反向移动
-                                if ((std::abs(endPoint.X() - startPoint.X()) > 1e-6 && endPoint.X() < startPoint.X()) || 
-                                    (std::abs(endPoint.Y() - startPoint.Y()) > 1e-6 && endPoint.Y() < startPoint.Y()) || 
-                                    (std::abs(endPoint.Z() - startPoint.Z()) > 1e-6 && endPoint.Z() < startPoint.Z())) {
-                                    newEndPoint = startPoint.Translated(gp_Vec(revDir) * (distanceText.toDouble()));
+                            // ① 当前 manipulator 姿态 & 轴方向（严格沿当前激活轴）
+                            gp_Ax2 curAx2 = m_aManipulator->Position();
+                            const int axisIndex = m_aManipulator->ActiveAxisIndex();
+
+                            gp_Dir axisDir;
+                            if (axisIndex == 0)      axisDir = curAx2.XDirection();
+                            else if (axisIndex == 1) axisDir = curAx2.YDirection();
+                            else                     axisDir = curAx2.Direction(); // Z 轴
+
+                            // ② 起点用拖动的几何起点，不再从 label 中点反推
+                            const gp_Pnt startPoint = m_initialPosition;
+
+                            
+                            const Standard_Real distanceModel = distanceMm;
+                            gp_Pnt newEndPoint = startPoint.Translated(gp_Vec(axisDir) * distanceModel);
+
+                            if (newEndPoint.IsEqual(startPoint, 1e-6)) {
+                                delete m_editLine;
+                                m_editLine = nullptr;
+                                return;
+                            }
+
+                            // ③ 更新 label 文本：直接显示用户输入值（避免后面再计算覆盖）
+                            {
+                                QString text = QString("Distance: %1 mm").arg(distanceMm, 0, 'f', 3);
+                                m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
+                                m_context->Redisplay(m_label, Standard_False);
+                            }
+
+                            // ④ 更新 manipulator 位置（保持姿态，只改位置）
+                            gp_Pnt endPoint = curAx2.Location();
+                            float mat[12] = {};
+                            occAx2ToMat(curAx2, mat, 1);
+                            mat[3] = static_cast<float>(newEndPoint.X());
+                            mat[7] = static_cast<float>(newEndPoint.Y());
+                            mat[11] = static_cast<float>(newEndPoint.Z());
+                            gp_Ax2 newEndAx2;
+                            occMatToAx2(mat, newEndAx2, 1);
+                            m_aManipulator->SetPosition(newEndAx2);
+
+                            // ⑤ 更新所有被操纵对象：沿 endPoint → newEndPoint 的位移
+                            gp_Vec translationVector(endPoint, newEndPoint);
+                            gp_Trsf transformation;
+                            transformation.SetTranslation(translationVector);
+
+                            Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
+                            AIS_ManipulatorObjectSequence::Iterator anObjIter(*objects);
+                            for (; anObjIter.More(); anObjIter.Next()) {
+                                const Handle(AIS_InteractiveObject)& anObj = anObjIter.ChangeValue();
+                                gp_Trsf oldTransformation = anObj->Transformation();
+                                const Handle(TopLoc_Datum3D)& aParentTrsf = anObj->CombinedParentTransformation();
+                                if (!aParentTrsf.IsNull() && aParentTrsf->Form() != gp_Identity) {
+                                    const gp_Trsf aNewLocalTrsf =
+                                        aParentTrsf->Trsf().Inverted() * transformation * aParentTrsf->Trsf() * oldTransformation;
+                                    anObj->SetLocalTransformation(aNewLocalTrsf);
                                 }
                                 else {
-                                    newEndPoint = startPoint.Translated(gp_Vec(dir) * (distanceText.toDouble()));
+                                    anObj->SetLocalTransformation(transformation * oldTransformation);
                                 }
-                                //if (distanceDouble < 0) {
-                                    //newEndPoint = startPoint.Translated(gp_Vec(dir) * (distanceText.toDouble()));
-                                //}
-                                //else {
-                                    //newEndPoint = startPoint.Translated(gp_Vec(dir) * (distanceText.toDouble()));
-                                //}
-                                
-
-                                // 新拖动的点距离太近约等于没有拉动这种操作不允许
-                                if (newEndPoint.IsEqual(startPoint, 1e-6)) {
-                                    return;
-                                }
-
-                                m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
-                                m_context->Redisplay(m_label, true);
-
-
-                                //Standard_Real newDistance = newEndPoint.Distance(startPoint);
-                                float mat[12] = {};
-                                occAx2ToMat(tmpEndAx2, mat, 1);
-                                mat[3] = newEndPoint.X();
-                                mat[7] = newEndPoint.Y();
-                                mat[11] = newEndPoint.Z();
-                                gp_Ax2 newEndAx2;
-                                occMatToAx2(mat, newEndAx2, 1);
-                                m_aManipulator->SetPosition(newEndAx2);
-
-                                //qInfo() << "handleMouseButtonRelease midPoint(X,Y,Z):" << midPoint.X() << " , " << midPoint.Y() << " , " << midPoint.Z() << " , ";
-                                //qInfo() << "handleMouseButtonRelease endPoint(X,Y,Z):" << endPoint.X() << " , " << endPoint.Y() << " , " << endPoint.Z() << " , ";
-                                //qInfo() << "handleMouseButtonRelease startPoint(X,Y,Z):" << startPoint.X() << " , " << startPoint.Y() << " , " << startPoint.Z() << " , ";
-                                //qInfo() << "handleMouseButtonRelease newEndPoint(X,Y,Z):" << newEndPoint.X() << " , " << newEndPoint.Y() << " , " << newEndPoint.Z() << " , ";
-                                //qInfo() << "handleMouseButtonRelease m_initialPosition(X,Y,Z):" << m_initialPosition.X() << " , " << m_initialPosition.Y() << " , " << m_initialPosition.Z() << " , ";
-
-                                //qInfo() << "handleMouseButtonRelease m_lastOperation:" << m_lastOperation;
-                                //qInfo() << "handleMouseButtonRelease m_meshId:" << m_meshId;
-                                //qInfo() << "handleMouseButtonRelease m_aManipulator->IsAttached():" << m_aManipulator->IsAttached();
-
-                                //Standard_Integer x1, y1;
-                                //m_occView->v3dView()->Convert(m_initialPosition.X(), m_initialPosition.Y(), m_initialPosition.Z(), x1, y1);
-                                ////qInfo() << "handleMouseButtonRelease V3d_View::Convert:" << x1 << " , " << y1;
-                                //Standard_Integer x2, y2;
-                                //m_occView->v3dView()->Convert(newEndPoint.X(), newEndPoint.Y(), newEndPoint.Z(), x2, y2);
-                                //qInfo() << "handleMouseButtonRelease newEndPoint V3d_View::Convert:" << x2 << " , " << y2;
-
-                                // 获取绑定物体的移动向量
-                                gp_Vec translationVector(endPoint, newEndPoint);
-                                gp_Trsf transformation;
-                                transformation.SetTranslation(translationVector);
-
-                                Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
-                                AIS_ManipulatorObjectSequence::Iterator anObjIter(*objects);
-                                for (; anObjIter.More(); anObjIter.Next())
-                                {
-                                    const Handle(AIS_InteractiveObject)& anObj = anObjIter.ChangeValue();
-                                    gp_Trsf oldTransformation = anObj->Transformation();                                    
-                                    //anObj->SetLocalTransformation(transformation * oldTransformation);
-
-                                    const Handle(TopLoc_Datum3D)& aParentTrsf = anObj->CombinedParentTransformation();
-                                    if (!aParentTrsf.IsNull() && aParentTrsf->Form() != gp_Identity)
-                                    {
-                                        // recompute local transformation relative to parent transformation
-                                        const gp_Trsf aNewLocalTrsf =
-                                            aParentTrsf->Trsf().Inverted() * transformation * aParentTrsf->Trsf() * oldTransformation;
-                                        anObj->SetLocalTransformation(aNewLocalTrsf);
-                                    }
-                                    else
-                                    {
-                                        anObj->SetLocalTransformation(transformation * oldTransformation);
-                                    }
-                                }
-                                
-
-                                gp_Ax1 axis1;
-                                ShowTransformTrajectory(m_context, axis1, m_initialPosition, newEndPoint);
-
-                                redrawView();
                             }
-                            
-                            // 删除 QLineEdit 对象
-                            delete m_editLine;
-                            m_editLine = nullptr;  // 确保指针不再指向已删除的对象
 
+                            // ⑥ 用“正确的轴向”调用 ShowTransformTrajectory
+                            gp_Ax1 axis1(startPoint, axisDir);
+                            ShowTransformTrajectory(m_context, axis1, startPoint, newEndPoint);
+
+                            redrawView();
+
+                            delete m_editLine;
+                            m_editLine = nullptr;
                             }, Qt::UniqueConnection);
+
+
+
+
+                        //connect(m_editLine, &QLineEdit::editingFinished, this, [this]() {
+                        //    QString distanceText = m_editLine->text();
+                        //    QString text = "Distance: " + distanceText + " mm";
+                        //    //qInfo() << "distanceText:" << text;
+
+                        //    if (!text.isEmpty() && !m_label.IsNull()&& m_editLine->hasFocus()) {
+                        //        
+                        //        // 移动
+                        //        gp_Pnt midPoint = m_label->Position();
+                        //        gp_Ax2 tmpEndAx2 = m_aManipulator->Position();
+                        //        gp_Pnt endPoint = tmpEndAx2.Location();
+                        //        Standard_Real midDistance = midPoint.Distance(endPoint);
+
+                        //        gp_Vec vec(midPoint, endPoint);
+                        //        gp_Dir dir(vec);
+                        //        gp_Dir revDir = dir.Reversed();
+                        //        gp_Pnt startPoint = midPoint.Translated(gp_Vec(revDir) * midDistance);
+                        //        // 恢复初始点
+                        //        m_initialPosition = startPoint;
+                        //        //qInfo() << "distanceText:" << distanceText.toDouble();
+                        //        double distanceDouble = distanceText.toDouble();
+                        //        gp_Pnt newEndPoint;
+                        //        // 前一次是反向移动
+                        //        if ((std::abs(endPoint.X() - startPoint.X()) > 1e-6 && endPoint.X() < startPoint.X()) || 
+                        //            (std::abs(endPoint.Y() - startPoint.Y()) > 1e-6 && endPoint.Y() < startPoint.Y()) || 
+                        //            (std::abs(endPoint.Z() - startPoint.Z()) > 1e-6 && endPoint.Z() < startPoint.Z())) {
+                        //            newEndPoint = startPoint.Translated(gp_Vec(revDir) * (distanceText.toDouble()));
+                        //        }
+                        //        else {
+                        //            newEndPoint = startPoint.Translated(gp_Vec(dir) * (distanceText.toDouble()));
+                        //        }
+                        //        //if (distanceDouble < 0) {
+                        //            //newEndPoint = startPoint.Translated(gp_Vec(dir) * (distanceText.toDouble()));
+                        //        //}
+                        //        //else {
+                        //            //newEndPoint = startPoint.Translated(gp_Vec(dir) * (distanceText.toDouble()));
+                        //        //}
+                        //        
+
+                        //        // 新拖动的点距离太近约等于没有拉动这种操作不允许
+                        //        if (newEndPoint.IsEqual(startPoint, 1e-6)) {
+                        //            return;
+                        //        }
+
+                        //        m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
+                        //        m_context->Redisplay(m_label, true);
+
+
+                        //        //Standard_Real newDistance = newEndPoint.Distance(startPoint);
+                        //        float mat[12] = {};
+                        //        occAx2ToMat(tmpEndAx2, mat, 1);
+                        //        mat[3] = newEndPoint.X();
+                        //        mat[7] = newEndPoint.Y();
+                        //        mat[11] = newEndPoint.Z();
+                        //        gp_Ax2 newEndAx2;
+                        //        occMatToAx2(mat, newEndAx2, 1);
+                        //        m_aManipulator->SetPosition(newEndAx2);
+
+                        //        //qInfo() << "handleMouseButtonRelease midPoint(X,Y,Z):" << midPoint.X() << " , " << midPoint.Y() << " , " << midPoint.Z() << " , ";
+                        //        //qInfo() << "handleMouseButtonRelease endPoint(X,Y,Z):" << endPoint.X() << " , " << endPoint.Y() << " , " << endPoint.Z() << " , ";
+                        //        //qInfo() << "handleMouseButtonRelease startPoint(X,Y,Z):" << startPoint.X() << " , " << startPoint.Y() << " , " << startPoint.Z() << " , ";
+                        //        //qInfo() << "handleMouseButtonRelease newEndPoint(X,Y,Z):" << newEndPoint.X() << " , " << newEndPoint.Y() << " , " << newEndPoint.Z() << " , ";
+                        //        //qInfo() << "handleMouseButtonRelease m_initialPosition(X,Y,Z):" << m_initialPosition.X() << " , " << m_initialPosition.Y() << " , " << m_initialPosition.Z() << " , ";
+
+                        //        //qInfo() << "handleMouseButtonRelease m_lastOperation:" << m_lastOperation;
+                        //        //qInfo() << "handleMouseButtonRelease m_meshId:" << m_meshId;
+                        //        //qInfo() << "handleMouseButtonRelease m_aManipulator->IsAttached():" << m_aManipulator->IsAttached();
+
+                        //        //Standard_Integer x1, y1;
+                        //        //m_occView->v3dView()->Convert(m_initialPosition.X(), m_initialPosition.Y(), m_initialPosition.Z(), x1, y1);
+                        //        ////qInfo() << "handleMouseButtonRelease V3d_View::Convert:" << x1 << " , " << y1;
+                        //        //Standard_Integer x2, y2;
+                        //        //m_occView->v3dView()->Convert(newEndPoint.X(), newEndPoint.Y(), newEndPoint.Z(), x2, y2);
+                        //        //qInfo() << "handleMouseButtonRelease newEndPoint V3d_View::Convert:" << x2 << " , " << y2;
+
+                        //        // 获取绑定物体的移动向量
+                        //        gp_Vec translationVector(endPoint, newEndPoint);
+                        //        gp_Trsf transformation;
+                        //        transformation.SetTranslation(translationVector);
+
+                        //        Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
+                        //        AIS_ManipulatorObjectSequence::Iterator anObjIter(*objects);
+                        //        for (; anObjIter.More(); anObjIter.Next())
+                        //        {
+                        //            const Handle(AIS_InteractiveObject)& anObj = anObjIter.ChangeValue();
+                        //            gp_Trsf oldTransformation = anObj->Transformation();                                    
+                        //            //anObj->SetLocalTransformation(transformation * oldTransformation);
+
+                        //            const Handle(TopLoc_Datum3D)& aParentTrsf = anObj->CombinedParentTransformation();
+                        //            if (!aParentTrsf.IsNull() && aParentTrsf->Form() != gp_Identity)
+                        //            {
+                        //                // recompute local transformation relative to parent transformation
+                        //                const gp_Trsf aNewLocalTrsf =
+                        //                    aParentTrsf->Trsf().Inverted() * transformation * aParentTrsf->Trsf() * oldTransformation;
+                        //                anObj->SetLocalTransformation(aNewLocalTrsf);
+                        //            }
+                        //            else
+                        //            {
+                        //                anObj->SetLocalTransformation(transformation * oldTransformation);
+                        //            }
+                        //        }
+                        //        
+
+                        //        gp_Ax1 axis1;
+                        //        ShowTransformTrajectory(m_context, axis1, m_initialPosition, newEndPoint);
+
+                        //        redrawView();
+                        //    }
+                        //    
+                        //    // 删除 QLineEdit 对象
+                        //    delete m_editLine;
+                        //    m_editLine = nullptr;  // 确保指针不再指向已删除的对象
+
+                        //    }, Qt::UniqueConnection);
+                        
+
+
                     }
 
 
@@ -1462,7 +1584,6 @@ namespace Mayo {
 
                             }, Qt::UniqueConnection);
                     }
-
                     return;
                 }
             }
