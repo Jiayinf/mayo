@@ -207,6 +207,8 @@ private:
     bool m_isFirstDisplay = true;
 
     gp_XYZ m_axis;
+
+    int m_distanceAxisIndex = -1;  // 记录当前 distance 对应的平移轴（0=X,1=Y,2=Z）
 };
 
 } // namespace Mayo
