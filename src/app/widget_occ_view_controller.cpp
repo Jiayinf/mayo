@@ -784,6 +784,40 @@ namespace Mayo {
                     m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 Z 轴的旋转
                 }
 
+
+                // ===== 平移辅助线：只在“真正点到某条平移轴(0/1/2)”时，更新会话起点/轴 =====
+                if (!m_aManipulator.IsNull()
+                    && AIS_MM_Translation == tmpActiveAxisMode
+                    && tmpActiveAxisIndex >= 0 && tmpActiveAxisIndex <= 2
+                    && m_aManipulator->HasActiveMode())   // 关键：确保鼠标确实点在 manipulator 的有效部件上
+                {
+                    const gp_Ax2 ax2 = m_aManipulator->Position();
+
+                    // 1) 本次拖动起点（用于 displacement 计算）必须更新成“当前点”
+                    //    否则切轴后仍会沿用旧的 m_initialPosition
+                    m_initialPosition = ax2.Location();
+
+                    // 2) 锁定当前轴方向（用于画线）
+                    gp_Dir axisDir =
+                        (tmpActiveAxisIndex == 0) ? ax2.XDirection() :
+                        (tmpActiveAxisIndex == 1) ? ax2.YDirection() :
+                        ax2.Direction();
+
+                    // 3) 辅助线会话：
+                    //    - 第一次进入：anchor=当前点
+                    //    - 同一轴：anchor 不变（保持 0→b 的语义）
+                    //    - 换轴：anchor 重置为当前点
+                    if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
+                        m_translateAbsAnchorWorld = ax2.Location();   // 换轴后新的起点应为当前点
+                        m_translateAbsAxisWorld = axisDir;
+                        m_translateAbsAxisIndex = tmpActiveAxisIndex;
+                        m_hasTranslateAbsAnchor = true;
+                    }
+                }
+                // ======================================================================
+
+
+
                 if (m_lastOperation == -1)
                 {
                     m_lastOperation = currentOperation;
@@ -837,6 +871,7 @@ namespace Mayo {
 
             return;
         }*/
+
 
         const Position currPos = toPosition(m_occView->widget()->mapFromGlobal(event->globalPos()));
         const Position prevPos = m_prevPos;
@@ -904,14 +939,42 @@ namespace Mayo {
                                         axisDir = manipAx2.Direction();        // Z（gp_Ax2::Direction() 是主方向）
                                     }
 
-                                    // 用初始位置 + 轴方向构造 gp_Ax1
-                                    const gp_Ax1 axis1(m_initialPosition, axisDir);
 
-                                    // 记录当前distance label和哪条轴关联
+
+                                    // ===== 新增：只在“真实拖动（按着左键移动）”时锁定辅助线的轴与 anchor =====
+                                    if ((event->buttons() & Qt::LeftButton) != 0
+                                        && AIS_MM_Translation == tmpActiveAxisMode
+                                        && tmpActiveAxisIndex >= 0 && tmpActiveAxisIndex <= 2)
+                                    {
+                                        // 如果是第一次锁定，或轴发生了变化（用户开始拖另一根轴），就更新锁定信息
+                                        if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
+                                            // 关键：anchor 必须是“该轴这次拖动的起点”
+                                            // 你在 press 里已经会更新 m_initialPosition（切换操作/轴时）
+                                            // 所以这里直接用 m_initialPosition 作为这次拖动的起点最稳
+                                            m_translateAbsAnchorWorld = m_initialPosition;
+
+                                            m_translateAbsAxisWorld = axisDir;
+                                            m_translateAbsAxisIndex = tmpActiveAxisIndex;
+                                            m_hasTranslateAbsAnchor = true;
+                                        }
+                                    }
+                                    // =========================================================================
+
+
+
+
+
+
+                                    // 记录当前 distance label
                                     m_distanceAxisIndex = tmpActiveAxisIndex;
-                                    
-                                    /*gp_Ax1 axis1;*/
-                                    ShowTransformTrajectory(m_context, axis1, m_initialPosition, currentPosition);
+
+                                    // 起点/轴：优先用“绝对 anchor（0）”
+                                    gp_Pnt startPoint = m_hasTranslateAbsAnchor ? m_translateAbsAnchorWorld : m_initialPosition;
+                                    gp_Dir drawAxisDir = m_hasTranslateAbsAnchor ? m_translateAbsAxisWorld : axisDir;
+
+                                    const gp_Ax1 axis1(startPoint, drawAxisDir);
+                                    ShowTransformTrajectory(m_context, axis1, startPoint, currentPosition);
+
                                 }
                             }
                             else if (AIS_MM_Rotation == tmpActiveAxisMode)
@@ -1317,14 +1380,17 @@ namespace Mayo {
                                     }
                                 }
 
-                                // 3) 轨迹线：绝对值语义（从起点到“总位移 b”端点）
-                                const gp_Pnt startPoint = m_initialPosition;
-                                gp_Pnt absEndPoint = startPoint.Translated(gp_Vec(axisDir) * newModel);
+                                // 3) 轨迹线：必须从“绝对起点 0”画到 “0 + b”
+                                gp_Pnt startPoint = m_hasTranslateAbsAnchor ? m_translateAbsAnchorWorld : m_initialPosition;
+                                gp_Dir drawAxisDir = m_hasTranslateAbsAnchor ? m_translateAbsAxisWorld : axisDir;
 
-                                gp_Ax1 axis1(startPoint, axisDir);
+                                gp_Pnt absEndPoint = startPoint.Translated(gp_Vec(drawAxisDir) * newModel);
+
+                                gp_Ax1 axis1(startPoint, drawAxisDir);
                                 ShowTransformTrajectory(m_context, axis1, startPoint, absEndPoint);
 
                                 redrawView();
+
 
                                 // 收尾
                                 delete m_editLine;

@@ -210,8 +210,11 @@ private:
 
     int m_distanceAxisIndex = -1;  // 记录当前 distance 对应的平移轴（0=X,1=Y,2=Z）
 
-
-
+    // --- 平移辅助线的绝对起点（你说的 0）---
+    gp_Pnt m_translateAbsAnchorWorld;
+    gp_Dir m_translateAbsAxisWorld;
+    int    m_translateAbsAxisIndex = -1;   // 0/1/2
+    bool   m_hasTranslateAbsAnchor = false;
 
 };
 
