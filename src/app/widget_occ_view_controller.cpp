@@ -1261,57 +1261,50 @@ namespace Mayo {
                                 else
                                     axisDir = curAx2.Direction();  // Z
 
-                                // 这一轮操作的起点（一般是拖动开始前的位置）
-                                const gp_Pnt startPoint = m_initialPosition;
-
-                                // 旧距离 a，新距离 b（单位：mm，直接按模型单位用）
+                                // 旧值 a、新值 b（单位：mm）
                                 const Standard_Real oldModel = oldDistanceMm;
                                 const Standard_Real newModel = newDistanceMm;
 
-                                // 旧终点（对应 a）、新终点（对应 b），都是从 startPoint 出发的“绝对位置”
-                                gp_Pnt oldEndPoint = startPoint.Translated(gp_Vec(axisDir) * oldModel);
-                                gp_Pnt newEndPoint = startPoint.Translated(gp_Vec(axisDir) * newModel);
-
-                                if (newEndPoint.IsEqual(oldEndPoint, 1e-6)) {
+                                // 增量：Δ = b - a
+                                const Standard_Real deltaModel = newModel - oldModel;
+                                if (Abs(deltaModel) < 1e-12) {
                                     delete m_editLine;
                                     m_editLine = nullptr;
                                     return;
                                 }
 
-                                // 更新 label：显示新的“总位移 b”
+                                // 轴向增量向量（世界坐标）
+                                gp_Vec deltaVec(axisDir);
+                                deltaVec *= deltaModel;
+
+                                // 更新 label：显示新的总位移 b
                                 {
                                     QString text = QString("%1 mm").arg(newDistanceMm, 0, 'f', 3);
-                                    m_label->SetText(
-                                        TCollection_ExtendedString(text.toStdWString().c_str()));
+                                    m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
                                     m_context->Redisplay(m_label, Standard_False);
                                 }
 
-                                // 把 manipulator 的坐标系搬到 newEndPoint
-                                float mat[12] = { 0.0f };
-                                occAx2ToMat(curAx2, mat, 1);
-                                mat[3] = static_cast<float>(newEndPoint.X());
-                                mat[7] = static_cast<float>(newEndPoint.Y());
-                                mat[11] = static_cast<float>(newEndPoint.Z());
+                                // 1) 先让拖动器也走同一个增量 Δ（不要“拍”到 startPoint+b）
+                                curAx2 = m_aManipulator->Position();
+                                gp_Pnt curLoc = curAx2.Location();
+                                gp_Pnt newLoc = curLoc.Translated(deltaVec);
 
-                                gp_Ax2 newEndAx2;
-                                occMatToAx2(mat, newEndAx2, 1);
-                                m_aManipulator->SetPosition(newEndAx2);
+                                // 保持当前朝向不变，只更新 location
+                                gp_Ax2 newAx2(newLoc, curAx2.Direction(), curAx2.XDirection());
+                                m_aManipulator->SetPosition(newAx2);
 
-                                // 真正作用在物体上的平移：从 oldEndPoint(a) 到 newEndPoint(b)
-                                gp_Vec translationVector(oldEndPoint, newEndPoint);
+                                // 2) 对物体应用同一个增量 Δ
                                 gp_Trsf transformation;
-                                transformation.SetTranslation(translationVector);
+                                transformation.SetTranslation(deltaVec);
 
                                 Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
                                 AIS_ManipulatorObjectSequence::Iterator anObjIter(*objects);
                                 for (; anObjIter.More(); anObjIter.Next()) {
                                     const Handle(AIS_InteractiveObject)& anObj = anObjIter.ChangeValue();
                                     gp_Trsf oldTransformation = anObj->Transformation();
-                                    const Handle(TopLoc_Datum3D)& aParentTrsf =
-                                        anObj->CombinedParentTransformation();
+                                    const Handle(TopLoc_Datum3D)& aParentTrsf = anObj->CombinedParentTransformation();
 
-                                    if (!aParentTrsf.IsNull()
-                                        && aParentTrsf->Form() != gp_Identity) {
+                                    if (!aParentTrsf.IsNull() && aParentTrsf->Form() != gp_Identity) {
                                         const gp_Trsf aNewLocalTrsf =
                                             aParentTrsf->Trsf().Inverted()
                                             * transformation
@@ -1320,19 +1313,23 @@ namespace Mayo {
                                         anObj->SetLocalTransformation(aNewLocalTrsf);
                                     }
                                     else {
-                                        anObj->SetLocalTransformation(
-                                            transformation * oldTransformation);
+                                        anObj->SetLocalTransformation(transformation * oldTransformation);
                                     }
                                 }
 
-                                // 辅助线：始终从 startPoint（起点 0）到 newEndPoint（总位移 b）
+                                // 3) 轨迹线：绝对值语义（从起点到“总位移 b”端点）
+                                const gp_Pnt startPoint = m_initialPosition;
+                                gp_Pnt absEndPoint = startPoint.Translated(gp_Vec(axisDir) * newModel);
+
                                 gp_Ax1 axis1(startPoint, axisDir);
-                                ShowTransformTrajectory(m_context, axis1, startPoint, newEndPoint);
+                                ShowTransformTrajectory(m_context, axis1, startPoint, absEndPoint);
 
                                 redrawView();
 
+                                // 收尾
                                 delete m_editLine;
                                 m_editLine = nullptr;
+
                             },
                             Qt::UniqueConnection
                         );
