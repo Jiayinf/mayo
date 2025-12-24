@@ -1275,12 +1275,52 @@ namespace Mayo {
                         m_editLine->setFocusPolicy(Qt::StrongFocus);
                         m_editLine->setFocus();
 
+                        
+
+
+                        // 冻结本次轴与 anchor（在 connect 之前）
+                        if (m_aManipulator.IsNull()) {
+                            delete m_editLine;
+                            m_editLine = nullptr;
+                            return;
+                        }
+
+                        const gp_Ax2 curAx2AtPopup = m_aManipulator->Position();
+                        const gp_Pnt curLocAtPopup = curAx2AtPopup.Location();
+
+                        // 冻结轴索引：优先用 m_distanceAxisIndex，否则用 ActiveAxisIndex
+                        int axisIndexFrozen = m_distanceAxisIndex;
+                        if (axisIndexFrozen < 0 || axisIndexFrozen > 2) {
+                            axisIndexFrozen = m_aManipulator->ActiveAxisIndex();
+                        }
+                        if (axisIndexFrozen < 0 || axisIndexFrozen > 2) {
+                            delete m_editLine;
+                            m_editLine = nullptr;
+                            return;
+                        }
+
+                        // 冻结轴方向
+                        gp_Dir axisDirFrozen =
+                            (axisIndexFrozen == 0) ? curAx2AtPopup.XDirection() :
+                            (axisIndexFrozen == 1) ? curAx2AtPopup.YDirection() :
+                            curAx2AtPopup.Direction(); // Z
+
+                        // 用“当前位置 + 旧绝对距离 a”反推绝对起点 anchor：anchor = currentLoc - axisDir * a
+                        gp_Pnt anchorFrozen = curLocAtPopup.Translated(gp_Vec(axisDirFrozen) * (-oldDistanceMm));
+
+
+
+
+                        
+                        
+                        
                         // ---------- 3. editingFinished：把“绝对距离 b”转成增量 (b - a) ----------
                         connect(
                             m_editLine,
                             &QLineEdit::editingFinished,
                             this,
-                            [this, oldDistanceMm]() {
+                            [this, oldDistanceMm, axisIndexFrozen, axisDirFrozen, anchorFrozen]() 
+                            {
                                 const QString distanceText = m_editLine->text().trimmed();
                                 if (distanceText.isEmpty() || m_label.IsNull()) {
                                     delete m_editLine;
@@ -1337,8 +1377,10 @@ namespace Mayo {
                                 }
 
                                 // 轴向增量向量（世界坐标）
-                                gp_Vec deltaVec(axisDir);
+                                gp_Vec deltaVec(axisDirFrozen);
                                 deltaVec *= deltaModel;
+                                /*gp_Vec deltaVec(axisDir);
+                                deltaVec *= deltaModel;*/
 
                                 // 更新 label：显示新的总位移 b
                                 {
@@ -1381,13 +1423,22 @@ namespace Mayo {
                                 }
 
                                 // 3) 轨迹线：必须从“绝对起点 0”画到 “0 + b”
-                                gp_Pnt startPoint = m_hasTranslateAbsAnchor ? m_translateAbsAnchorWorld : m_initialPosition;
-                                gp_Dir drawAxisDir = m_hasTranslateAbsAnchor ? m_translateAbsAxisWorld : axisDir;
+                                gp_Pnt startPoint = anchorFrozen;
+                                gp_Dir drawAxisDir = axisDirFrozen;
+                                /*gp_Pnt startPoint = m_hasTranslateAbsAnchor ? m_translateAbsAnchorWorld : m_initialPosition;
+                                gp_Dir drawAxisDir = m_hasTranslateAbsAnchor ? m_translateAbsAxisWorld : axisDir;*/
 
                                 gp_Pnt absEndPoint = startPoint.Translated(gp_Vec(drawAxisDir) * newModel);
 
                                 gp_Ax1 axis1(startPoint, drawAxisDir);
                                 ShowTransformTrajectory(m_context, axis1, startPoint, absEndPoint);
+
+                                // 在这里同步缓存：输入框路径与拖动路径统一“绝对起点/轴”
+                                m_translateAbsAnchorWorld = anchorFrozen;
+                                m_translateAbsAxisWorld = axisDirFrozen;
+                                m_translateAbsAxisIndex = axisIndexFrozen;
+                                m_hasTranslateAbsAnchor = true;
+                                m_distanceAxisIndex = axisIndexFrozen;
 
                                 redrawView();
 
