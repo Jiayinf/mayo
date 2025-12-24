@@ -329,6 +329,8 @@ namespace Mayo {
         //trajectoryShape->SetTypeOfLine(Aspect_TOL_DASH);
         m_trajectoryShape->SetWidth(5);
 
+        m_trajectoryShape->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(m_trajectoryShape, 10);
 
         // 显示轨迹
         ctx->Display(m_trajectoryShape, Standard_False);
@@ -350,7 +352,7 @@ namespace Mayo {
         arrowEnd = new AIS_Shape(coneEnd);
         arrowEnd->SetDisplayMode(AIS_Shaded);
         arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowEnd->SetColor(Quantity_NOC_BLACK);
+        arrowEnd->SetColor(Quantity_NOC_GREEN);
         arrowEnd->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(arrowEnd, 11);
         ctx->Display(arrowEnd, false);
@@ -358,7 +360,7 @@ namespace Mayo {
         arrowStart = new AIS_Shape(coneStart);
         arrowStart->SetDisplayMode(AIS_Shaded);
         arrowStart->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowStart->SetColor(Quantity_NOC_BLACK);
+        arrowStart->SetColor(Quantity_NOC_GREEN);
         arrowStart->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(arrowStart, 11);
         ctx->Display(arrowStart, false);
@@ -1359,6 +1361,35 @@ namespace Mayo {
                         m_editLine->setFocus();   // 获得焦点
 
                         //qInfo() << "handleMouseButtonRelease create m_label!!!";
+
+                        // 用 rolabel 的 3D 位置投影到屏幕，作为输入框位置
+                        if (!m_occView || m_rolabel.IsNull()) {
+                            // fallback：退回鼠标位置也行
+                        }
+                        else {
+                            Standard_Integer vx = 0, vy = 0;
+                            const gp_Pnt labelPnt = m_rolabel->Position();
+
+                            m_occView->v3dView()->Convert(labelPnt.X(), labelPnt.Y(), labelPnt.Z(), vx, vy);
+
+                            QWidget* viewWidget = m_occView->widget();
+                            QWidget* parentWidget = viewWidget->parentWidget();
+
+                            QPoint viewLocalPos(vx, vy);
+
+                            // 如果你发现 y 上下颠倒，启用这一行：
+                            // viewLocalPos.setY(viewWidget->height() - vy);
+
+                            QPoint globalPos = viewWidget->mapToGlobal(viewLocalPos);
+                            QPoint localPos = parentWidget->mapFromGlobal(globalPos);
+
+                            // 微调：让输入框居中对齐文本
+                            localPos -= QPoint(m_editLine->width() / 2, m_editLine->height() / 2);
+                            localPos += QPoint(0, -10);
+
+                            m_editLine->move(localPos);
+                        }
+
 
                         connect(m_editLine, &QLineEdit::editingFinished, this, [this]() {
                             QString distanceText = m_editLine->text();
