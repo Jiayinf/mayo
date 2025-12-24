@@ -134,22 +134,6 @@ namespace Mayo {
         m_aSequence = new AIS_ManipulatorObjectSequence();
         m_aManipulator = new AIS_Manipulator();
 
-        //SoDB::init();
-        //SoFCCSysDragger::initClass(); // 如果是自定义类
-        //pcDragger = CoinPtr<SoFCCSysDragger>(new SoFCCSysDragger);
-
-        /*pcDragger->addStartCallback(dragStartCallback, this);
-        pcDragger->addFinishCallback(dragFinishCallback, this);
-        pcDragger->addMotionCallback(dragMotionCallback, this);*/
-
-        //Handle(Prs3d_DatumAspect) aDatumAspect = new Prs3d_DatumAspect();
-        //aDatumAspect->SetAxisLength(100.0, 100.0, 100.0);      // 增大轴长
-        //aDatumAspect->SetDatumAttribute(Prs3d_DatumAttribute_ShadingTubeRadius,
-        //    3.0
-        //);// 增大此值可提升拾取灵敏度);     // 增大箭头
-        //aDatumAspect->SetCylinderRadius(2.0);   // 增大旋转圆弧的截面半径（关键！）
-        //m_aManipulator->SetDatumAspect(aDatumAspect);
-
         m_aManipulatorDo = false;
         m_aManipulatorReady = false;
         m_meshId = -1;
@@ -223,9 +207,7 @@ namespace Mayo {
         m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // 禁用了 X 轴的缩放
         m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // 禁用了 Y 轴的缩放
         m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // 禁用了 Z 轴的缩放
-        //m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 X 轴的旋转
-        //m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Y 轴的旋转
-        //m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Z 轴的旋转
+
 
         m_attachOption.AdjustPosition = true;
         m_attachOption.AdjustSize = false;
@@ -363,18 +345,24 @@ namespace Mayo {
         gp_Ax2 endAx2(endPoint, gp_Dir(dirEnd));
         TopoDS_Shape coneEnd = BRepPrimAPI_MakeCone(endAx2, arrowRadius, 0.0, arrowLength);
 
-        // 转为 AIS_Shape 显示
-        arrowStart = new AIS_Shape(coneStart);
-        arrowStart->SetDisplayMode(AIS_Shaded);
-        arrowStart->SetColor(Quantity_NOC_GREEN);
-        arrowStart->SetMaterial(Graphic3d_NOM_PLASTIC);
-        ctx->Display(arrowStart, Standard_False);
 
+        // 转为 AIS_Shape 显示
         arrowEnd = new AIS_Shape(coneEnd);
         arrowEnd->SetDisplayMode(AIS_Shaded);
-        arrowEnd->SetColor(Quantity_NOC_GREEN);
         arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
-        ctx->Display(arrowEnd, Standard_False);
+        arrowEnd->SetColor(Quantity_NOC_BLACK);
+        arrowEnd->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(arrowEnd, 11);
+        ctx->Display(arrowEnd, false);
+
+        arrowStart = new AIS_Shape(coneStart);
+        arrowStart->SetDisplayMode(AIS_Shaded);
+        arrowStart->SetMaterial(Graphic3d_NOM_PLASTIC);
+        arrowStart->SetColor(Quantity_NOC_BLACK);
+        arrowStart->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(arrowStart, 11);
+        ctx->Display(arrowStart, false);
+
 
         // 计算圆弧的相关信息
         gp_Pnt circleCenter = trajectoryCircle->Location(); // 圆心位置
@@ -410,10 +398,6 @@ namespace Mayo {
 
         ctx->Display(m_rolabel, Standard_False);
 
-       /* Handle(Geom_Axis1Placement) axisGeom =
-            new Geom_Axis1Placement(rotationAxis);
-        Handle(AIS_Axis) aisAxis = new AIS_Axis(axisGeom);
-        ctx->Display(aisAxis, Standard_True);*/
 
     }
 
@@ -452,44 +436,19 @@ namespace Mayo {
         TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(startPoint, endPoint);
         Handle(AIS_Shape) lineShape = new AIS_Shape(edge);
 
-        //// 在轨迹末端添加箭头
-        //gp_Vec direction(startPoint, endPoint);
-        //gp_Pnt lastPos = endPoint;
-
-        //BRepPrimAPI_MakeCone mkCone(gp_Ax2(endPoint, direction), 0.005, 0, 0.02);
-
-        //TopoDS_Shape shapeAll = BRepAlgoAPI_Fuse(edge, mkCone.Shape());
-
         m_trajectoryShape = lineShape;
 
         m_trajectoryShape->SetColor(Quantity_NOC_BLACK);
         m_trajectoryShape->SetWidth(5);
+
+        // 关键：放到 Topmost 图层 + 提升显示优先级
+        m_trajectoryShape->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(m_trajectoryShape, 10);
+
         ctx->Display(m_trajectoryShape, Standard_False);
 
-        
 
-        //// 新增：用“沿操纵器轴方向的投影”作为带符号距离
-        //const gp_Vec v(startPoint, endPoint);                 // 位移向量
-        //const gp_Vec axisVec(rotationAxis.Direction());
-
-        //// signedDistance 是“沿轴方向”的带符号位移
-        //// >0: 沿轴正向；<0: 沿轴反向
-        //Standard_Real signedDistance = v.Dot(axisVec);
-
-
-        //// 在终点显示移动距离
-        ///*Standard_Real distance = startPoint.Distance(endPoint);*/
-
-        ////if ((std::abs(endPoint.X() - startPoint.X()) > 1e-6 && endPoint.X() < startPoint.X()) ||
-        ////    (std::abs(endPoint.Y() - startPoint.Y()) > 1e-6 && endPoint.Y() < startPoint.Y()) ||
-        ////    (std::abs(endPoint.Z() - startPoint.Z()) > 1e-6 && endPoint.Z() < startPoint.Z())) {
-        //////if (endPoint.X() < startPoint.X() || endPoint.Y() < startPoint.Y() || endPoint.Z() < startPoint.Z()) {
-        ////    distance = - distance; 
-        ////}
-        //m_label = new AIS_TextLabel();
-        //std::string distanceStr = "Distance: " + std::to_string(signedDistance) + " mm";
-        //m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
-
+       
         const gp_Vec v(startPoint, endPoint);
         const gp_Vec axisVec(rotationAxis.Direction());
         Standard_Real signedDistance = v.Dot(axisVec);
@@ -536,20 +495,32 @@ namespace Mayo {
         gp_Pnt arrowEndPoint = endPoint.Translated(gp_Vec(revDir) * (arrowLength - 20));
         gp_Ax2 endAx2(arrowEndPoint, dir); // 从终点朝向外
         TopoDS_Shape coneEnd = BRepPrimAPI_MakeCone(endAx2, arrowRadius, 0.0, arrowLength);
+
         arrowEnd = new AIS_Shape(coneEnd);
         arrowEnd->SetDisplayMode(AIS_Shaded);
         arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
         arrowEnd->SetColor(Quantity_NOC_BLACK);
+
+        // Topmost + 更高 priority（保证盖住轨迹线）
+        arrowEnd->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(arrowEnd, 11);
+
         ctx->Display(arrowEnd, false);
 
         // 起点箭头
         gp_Pnt arrowStartPoint = startPoint.Translated(gp_Vec(dir) * (arrowLength - 20));
         gp_Ax2 startAx2(arrowStartPoint, revDir); // 从起点朝向外
         TopoDS_Shape coneStart = BRepPrimAPI_MakeCone(startAx2, arrowRadius, 0.0, arrowLength);
+
         arrowStart = new AIS_Shape(coneStart);
         arrowStart->SetDisplayMode(AIS_Shaded);
         arrowStart->SetMaterial(Graphic3d_NOM_PLASTIC);
         arrowStart->SetColor(Quantity_NOC_BLACK);
+
+        // Topmost + 更高 priority（保证盖住轨迹线）
+        arrowStart->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(arrowStart, 11);
+
         ctx->Display(arrowStart, false);
     }
 
@@ -939,8 +910,6 @@ namespace Mayo {
                                         axisDir = manipAx2.Direction();        // Z（gp_Ax2::Direction() 是主方向）
                                     }
 
-
-
                                     // ===== 新增：只在“真实拖动（按着左键移动）”时锁定辅助线的轴与 anchor =====
                                     if ((event->buttons() & Qt::LeftButton) != 0
                                         && AIS_MM_Translation == tmpActiveAxisMode
@@ -961,10 +930,6 @@ namespace Mayo {
                                     // =========================================================================
 
 
-
-
-
-
                                     // 记录当前 distance label
                                     m_distanceAxisIndex = tmpActiveAxisIndex;
 
@@ -983,63 +948,6 @@ namespace Mayo {
 
                                 gp_Trsf currentRotation = m_aManipulator->Transformation();
 
-                                //{
-                                //    // 提取旋转四元数
-                                //    gp_Quaternion quat = currentRotation.GetRotation();
-
-                                //    // 转换为轴-角表示
-                                //    gp_Vec axisVec;
-                                //    Standard_Real angle;
-                                //    quat.GetVectorAndAngle(axisVec, angle);
-                                //    int a = 0;
-                                //    // 检查旋转轴是否匹配
-                                //    //if (axisVec.IsParallel(axis.Direction(), Precision::Angular())) {
-                                //    //    return; // 返回弧度值
-                                //    //}
-                                //}
-
-                                //{
-                                //    //test
-                                //    // 获取旋转轴和角度
-                                //    gp_XYZ axis;
-                                //    Standard_Real angle;
-                                //    currentRotation.GetRotation(axis, angle);
-
-                                //    if (gp_Dir(axis).Dot(m_axis) < 0)
-                                //    {
-                                //        axis.Reverse();
-                                //        m_axis = axis;
-                                //        //angle = -angle;
-                                //        //currentRotation.SetRotation(m_axis);
-                                //    }
-
-                                //    gp_XYZ axis2;
-                                //    Standard_Real angle2;
-                                //    m_initialRotation.GetRotation(axis2, angle2);
-                                //    if (currentRotation.Form() != gp_Rotation) {
-                                //        // 不是纯旋转变换
-                                //        int b = currentRotation.Form();
-
-                                //        gp_Mat matrix2 = currentRotation.VectorialPart();
-
-
-
-                                //        int c = 0;
-                                //    }
-
-                                //    /* currentRotation.SetRotation(axis, angle);*/
-
-                                //    if (m_initialRotation.Form() != gp_Rotation) {
-                                //        // 不是纯旋转变换
-                                //        int b = m_initialRotation.Form();
-                                //        int c = 0;
-                                //    }
-
-                                //    int a = 0;
-                                //}
-
-
-
 
                                 gp_Quaternion deltaRotation = currentRotation.GetRotation() * m_initialRotation.GetRotation().Inverted();
                                 //if (deltaRotation.W() < 0) deltaRotation = -deltaRotation; // 统一为 w > 0 的表示
@@ -1052,22 +960,6 @@ namespace Mayo {
                                 qInfo() << "angle: " << angle;
                                 qInfo() << "deltaRotation.W(): " << deltaRotation.W();
 
-
-                                //if (angle < 0) angle += 2 * M_PI;
-
-                                //if (std::abs(angle - lastAngle) > M_PI) 
-                                //{
-                                //    /*angle += (angle > 0) ? -2 * M_PI : 2 * M_PI;*/
-                                //    if (angle > 0)
-                                //    {
-                                //        angle = 2 * M_PI - angle;
-                                //    }
-                                //    else
-                                //    {
-                                //        angle = 2 * M_PI + angle;
-                                //    }
-                                //}
-                                //lastAngle = angle;
 
                                 // 1. 获取局部坐标系和旋转轴
                                 gp_Ax2 localAxes = m_aManipulator->Position();
@@ -1088,35 +980,6 @@ namespace Mayo {
                                     rotationAxis = localAxes.Direction(); // 当前旋转轴
                                     initialDir = localAxes.XDirection();  // 初始参考方向
                                 }
-                                //gp_Dir rotationAxis = localAxes.Direction(); // 当前旋转轴
-                                //gp_Dir initialDir = localAxes.XDirection();  // 初始参考方向
-
-                                //// 2. 计算当前方向向量（投影到旋转平面）
-                                //gp_Pnt center = localAxes.Location();
-                                //gp_Vec currentVec(center, m_initialPosition);
-                                //gp_Vec normalVec(rotationAxis);
-                                //currentVec -= normalVec * (currentVec.Dot(normalVec));
-
-                                //// 3. 计算角度
-                                //gp_Vec initVec(initialDir);
-                                //initVec.Normalize();
-                                //currentVec.Normalize();
-
-                                //Standard_Real angle = initVec.Angle(currentVec);
-                                //gp_Vec cross = initVec.Crossed(currentVec);
-                                //if (cross.Dot(normalVec) < 0) {
-                                //    angle = -angle;
-                                //}
-
-                                //static Standard_Real totalAngle = 0.0;
-                                //totalAngle += angle;
-
-        /*                        Standard_Real angle = xDir1.AngleWithRef(xDir2, zAxis1);*/
-
-
-
-                                //// 假设激活的是Z轴旋转（根据实际情况调整）
-                                //rotationAxis = m_aManipulator->Position().Axis(); // 0:X, 1:Y, 2:Z
 
                                 m_posTransform.SetX(axis.X());
                                 m_posTransform.SetY(axis.Y());
@@ -1136,8 +999,6 @@ namespace Mayo {
                                 {
                                     axisRotation = m_aManipulator->Position().XDirection().Crossed(m_aManipulator->Position().YDirection());
                                 }
-                                //gp_Ax1 axis1(currentPosition, axisRotation);
-                                //tmpRotationAxis = axis1;
 
                                 axisRotation.Normalize();
 
@@ -1157,19 +1018,6 @@ namespace Mayo {
                                 gp_Ax1 axis1(currentPosition, axisRotation);
                                 ShowRotationTrajectory(m_context, axis1, 0.0, signedAngle);
 
-
-
-
-                                //if ((std::abs(axis.X()) > 1e-6 && axis.X() < 0) ||
-                                //    (std::abs(axis.Y()) > 1e-6 && axis.Y() < 0) ||
-                                //    (std::abs(axis.Z()) > 1e-6 && axis.Z() < 0)) {
-                                //    ShowRotationTrajectory(m_context, axis1, 0.0, -angle);
-                                //}
-                                //else {
-                                //    ShowRotationTrajectory(m_context, axis1, 0.0, angle);
-                                //}
-                                //ShowRotationTrajectory(m_context, axis1, 0.0, angle);
-                                /*startAngle = angle;*/
                             }
 
                         }
@@ -1262,13 +1110,41 @@ namespace Mayo {
                         m_editLine->setText(numberPart);
                         // -------------------------------------------------
 
-                        // ---------- 2. 把屏幕坐标映射到父窗口局部坐标 ----------
-                        const QPoint globalPos = QCursor::pos();
+                        //// ---------- 2. 把屏幕坐标映射到父窗口局部坐标 ----------
+                        //const QPoint globalPos = QCursor::pos();
+                        //QPoint localPos = parentWidget->mapFromGlobal(globalPos);
+                        //// 稍微往上移一点，避免挡住鼠标
+                        //localPos += QPoint(0, -50);
+                        //m_editLine->move(localPos);
+                        //// -------------------------------------------------
+
+                        // ---------- 2. 把 m_label 的 3D 位置投影到屏幕坐标 ----------
+                        Standard_Integer vx = 0, vy = 0;
+
+                        // m_label 的 3D 位置
+                        const gp_Pnt labelPnt = m_label->Position();
+
+                        // OCCT 投影：世界坐标 -> 视口像素坐标
+                        m_occView->v3dView()->Convert(labelPnt.X(), labelPnt.Y(), labelPnt.Z(), vx, vy);
+
+                        // Convert 给的是 OCC 视图坐标（通常原点在左上/左下取决于实现）
+                        // Mayo/OCCT 里一般可以直接当作 Qt widget 的局部坐标使用；
+                        // 若你发现 Y 方向上下颠倒，再做一次 vy = viewHeight - vy。
+
+                        QWidget* viewWidget = m_occView->widget();
+                        QWidget* parentWidget = viewWidget->parentWidget();
+
+                        // 视图局部坐标 -> 全局 -> parentWidget 局部
+                        QPoint viewLocalPos(vx, vy);
+                        QPoint globalPos = viewWidget->mapToGlobal(viewLocalPos);
                         QPoint localPos = parentWidget->mapFromGlobal(globalPos);
-                        // 稍微往上移一点，避免挡住鼠标
-                        localPos += QPoint(0, -50);
+
+                        // 让输入框居中贴近文字（微调偏移可按需要改）
+                        localPos -= QPoint(m_editLine->width() / 2, m_editLine->height() / 2);
+                        localPos += QPoint(0, -10);
+
                         m_editLine->move(localPos);
-                        // -------------------------------------------------
+
 
                         m_editLine->show();
                         m_editLine->raise();
@@ -1276,8 +1152,6 @@ namespace Mayo {
                         m_editLine->setFocus();
 
                         
-
-
                         // 冻结本次轴与 anchor（在 connect 之前）
                         if (m_aManipulator.IsNull()) {
                             delete m_editLine;
@@ -1307,11 +1181,7 @@ namespace Mayo {
 
                         // 用“当前位置 + 旧绝对距离 a”反推绝对起点 anchor：anchor = currentLoc - axisDir * a
                         gp_Pnt anchorFrozen = curLocAtPopup.Translated(gp_Vec(axisDirFrozen) * (-oldDistanceMm));
-
-
-
-
-                        
+                      
                         
                         
                         // ---------- 3. editingFinished：把“绝对距离 b”转成增量 (b - a) ----------
@@ -1379,8 +1249,6 @@ namespace Mayo {
                                 // 轴向增量向量（世界坐标）
                                 gp_Vec deltaVec(axisDirFrozen);
                                 deltaVec *= deltaModel;
-                                /*gp_Vec deltaVec(axisDir);
-                                deltaVec *= deltaModel;*/
 
                                 // 更新 label：显示新的总位移 b
                                 {
@@ -1425,8 +1293,7 @@ namespace Mayo {
                                 // 3) 轨迹线：必须从“绝对起点 0”画到 “0 + b”
                                 gp_Pnt startPoint = anchorFrozen;
                                 gp_Dir drawAxisDir = axisDirFrozen;
-                                /*gp_Pnt startPoint = m_hasTranslateAbsAnchor ? m_translateAbsAnchorWorld : m_initialPosition;
-                                gp_Dir drawAxisDir = m_hasTranslateAbsAnchor ? m_translateAbsAxisWorld : axisDir;*/
+
 
                                 gp_Pnt absEndPoint = startPoint.Translated(gp_Vec(drawAxisDir) * newModel);
 
@@ -1456,297 +1323,6 @@ namespace Mayo {
                     return;
                 }
 
-
-
-                //if (selected == m_label)
-                //{
-                //    QString currentText = QString::fromUtf16(m_label->Text().ToExtString());
-
-                //    QWidget* parentWidget = m_occView->widget()->parentWidget();  // WidgetGuiDocument
-
-                //    if (!m_editLine) {
-                //        m_editLine = new QLineEdit(parentWidget); // 覆盖在 viewer 上
-                //        setMoveLine = true;
-                //        //m_editLine = new QLineEdit(nullptr);  // 没有父控件，系统浮动窗口
-                //        //m_editLine->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
-                //        m_editLine->setStyleSheet("background: white; color: black; border: 1px solid red;");
-                //        m_editLine->setAlignment(Qt::AlignCenter);
-                //        m_editLine->setValidator(new QRegularExpressionValidator(QRegularExpression("^-?(0|([1-9][0-9]*))(\\.[0-9]+)?$")));
-                //        m_editLine->resize(150, 24);
-                //        m_editLine->setFrame(true);
-                //        m_editLine->hide();
-                //        
-
-                //        // 设置文本框位置
-                //        QStringList qlist = currentText.split(" ");
-                //        m_editLine->setText(qlist[1]);
-
-                //        //QPoint editPoint;
-                //        //editPoint.setX(QCursor::pos().x());
-                //        //editPoint.setY(QCursor::pos().y() - 50);
-                //        //m_editLine->move(editPoint);
-                //        //qInfo() << "QCursor::pos():" << QCursor::pos();
-
-                //        // 1) global -> parentWidget local
-                //        const QPoint globalPos = QCursor::pos();
-                //        QPoint localPos = parentWidget->mapFromGlobal(globalPos);
-
-                //        // 2) 原来是 y-50，这里保持同样 向上偏移
-                //        localPos += QPoint(0, -50);
-
-                //        //// 3) 边界裁剪，避免出界
-                //        //const QSize sz = m_editLine->size();
-                //        //localPos.setX(std::clamp(localPos.x(), 0, parentWidget->width() - sz.width()));
-                //        //localPos.setY(std::clamp(localPos.y(), 0, parentWidget->height() - sz.height()));
-
-                //        m_editLine->move(localPos);
-
-
-                //        m_editLine->show();       // 显示
-                //        m_editLine->raise();      // 放到最上层
-                //        m_editLine->setFocusPolicy(Qt::StrongFocus);
-                //        m_editLine->setFocus();   // 获得焦点
-
-                //        //qInfo() << "handleMouseButtonRelease create m_label!!!";
-
-
-                //        connect(m_editLine, &QLineEdit::editingFinished, this, [this]() {
-                //            const QString distanceText = m_editLine->text().trimmed();
-                //            if (distanceText.isEmpty() || m_label.IsNull()) {
-                //                delete m_editLine;
-                //                m_editLine = nullptr;
-                //                return;
-                //            }
-
-                //            bool ok = false;
-                //            const double distanceMm = distanceText.toDouble(&ok);
-                //            if (!ok) {
-                //                delete m_editLine;
-                //                m_editLine = nullptr;
-                //                return;
-                //            }
-
-                //            //// ① 当前 manipulator 姿态 & 轴方向（严格沿当前激活轴）
-                //            //gp_Ax2 curAx2 = m_aManipulator->Position();
-                //            //const int axisIndex = m_aManipulator->ActiveAxisIndex();
-
-                //            //gp_Dir axisDir;
-                //            //if (axisIndex == 0)      axisDir = curAx2.XDirection();
-                //            //else if (axisIndex == 1) axisDir = curAx2.YDirection();
-                //            //else                     axisDir = curAx2.Direction(); // Z 轴
-
-
-
-                //            gp_Ax2 curAx2 = m_aManipulator->Position();
-
-                //            // ① 优先使用上一次记录下来的 distance 轴索引
-                //            int axisIndex = m_distanceAxisIndex;
-
-                //            // ② 如果实在没记录到（例如一些特殊情况），再尝试用 ActiveAxisIndex
-                //            if (axisIndex < 0 || axisIndex > 2) {
-                //                axisIndex = m_aManipulator->ActiveAxisIndex();
-                //            }
-
-                //            // ③ 如果到这里 axisIndex 仍然无效，就直接放弃这次数值平移，避免乱跑
-                //            if (axisIndex < 0 || axisIndex > 2) {
-                //                delete m_editLine;
-                //                m_editLine = nullptr;
-                //                return;
-                //            }
-
-                //            gp_Dir axisDir;
-                //            if (axisIndex == 0)      axisDir = curAx2.XDirection();
-                //            else if (axisIndex == 1) axisDir = curAx2.YDirection();
-                //            else                     axisDir = curAx2.Direction(); // 这里的“else”现在只会在 axisIndex==2 时走
-
-
-                //            // ② 起点用拖动的几何起点，不再从 label 中点反推
-                //            const gp_Pnt startPoint = m_initialPosition;
-
-                //            
-                //            const Standard_Real distanceModel = distanceMm;
-                //            gp_Pnt newEndPoint = startPoint.Translated(gp_Vec(axisDir) * distanceModel);
-
-                //            if (newEndPoint.IsEqual(startPoint, 1e-6)) {
-                //                delete m_editLine;
-                //                m_editLine = nullptr;
-                //                return;
-                //            }
-
-                //            // ③ 更新 label 文本：直接显示用户输入值（避免后面再计算覆盖）
-                //            {
-                //                QString text = QString("%1 mm").arg(distanceMm, 0, 'f', 3);
-                //                m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
-                //                m_context->Redisplay(m_label, Standard_False);
-                //            }
-
-                //            // ④ 更新 manipulator 位置（保持姿态，只改位置）
-                //            gp_Pnt endPoint = curAx2.Location();
-                //            float mat[12] = {};
-                //            occAx2ToMat(curAx2, mat, 1);
-                //            mat[3] = static_cast<float>(newEndPoint.X());
-                //            mat[7] = static_cast<float>(newEndPoint.Y());
-                //            mat[11] = static_cast<float>(newEndPoint.Z());
-                //            gp_Ax2 newEndAx2;
-                //            occMatToAx2(mat, newEndAx2, 1);
-                //            m_aManipulator->SetPosition(newEndAx2);
-
-                //            // ⑤ 更新所有被操纵对象：沿 endPoint → newEndPoint 的位移
-                //            gp_Vec translationVector(endPoint, newEndPoint);
-                //            gp_Trsf transformation;
-                //            transformation.SetTranslation(translationVector);
-
-                //            Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
-                //            AIS_ManipulatorObjectSequence::Iterator anObjIter(*objects);
-                //            for (; anObjIter.More(); anObjIter.Next()) {
-                //                const Handle(AIS_InteractiveObject)& anObj = anObjIter.ChangeValue();
-                //                gp_Trsf oldTransformation = anObj->Transformation();
-                //                const Handle(TopLoc_Datum3D)& aParentTrsf = anObj->CombinedParentTransformation();
-                //                if (!aParentTrsf.IsNull() && aParentTrsf->Form() != gp_Identity) {
-                //                    const gp_Trsf aNewLocalTrsf =
-                //                        aParentTrsf->Trsf().Inverted() * transformation * aParentTrsf->Trsf() * oldTransformation;
-                //                    anObj->SetLocalTransformation(aNewLocalTrsf);
-                //                }
-                //                else {
-                //                    anObj->SetLocalTransformation(transformation * oldTransformation);
-                //                }
-                //            }
-
-                //            // ⑥ 用“正确的轴向”调用 ShowTransformTrajectory
-                //            gp_Ax1 axis1(startPoint, axisDir);
-                //            ShowTransformTrajectory(m_context, axis1, startPoint, newEndPoint);
-
-                //            redrawView();
-
-                //            delete m_editLine;
-                //            m_editLine = nullptr;
-                //            }, Qt::UniqueConnection);
-
-
-
-
-                //        //connect(m_editLine, &QLineEdit::editingFinished, this, [this]() {
-                //        //    QString distanceText = m_editLine->text();
-                //        //    QString text = "Distance: " + distanceText + " mm";
-                //        //    //qInfo() << "distanceText:" << text;
-
-                //        //    if (!text.isEmpty() && !m_label.IsNull()&& m_editLine->hasFocus()) {
-                //        //        
-                //        //        // 移动
-                //        //        gp_Pnt midPoint = m_label->Position();
-                //        //        gp_Ax2 tmpEndAx2 = m_aManipulator->Position();
-                //        //        gp_Pnt endPoint = tmpEndAx2.Location();
-                //        //        Standard_Real midDistance = midPoint.Distance(endPoint);
-
-                //        //        gp_Vec vec(midPoint, endPoint);
-                //        //        gp_Dir dir(vec);
-                //        //        gp_Dir revDir = dir.Reversed();
-                //        //        gp_Pnt startPoint = midPoint.Translated(gp_Vec(revDir) * midDistance);
-                //        //        // 恢复初始点
-                //        //        m_initialPosition = startPoint;
-                //        //        //qInfo() << "distanceText:" << distanceText.toDouble();
-                //        //        double distanceDouble = distanceText.toDouble();
-                //        //        gp_Pnt newEndPoint;
-                //        //        // 前一次是反向移动
-                //        //        if ((std::abs(endPoint.X() - startPoint.X()) > 1e-6 && endPoint.X() < startPoint.X()) || 
-                //        //            (std::abs(endPoint.Y() - startPoint.Y()) > 1e-6 && endPoint.Y() < startPoint.Y()) || 
-                //        //            (std::abs(endPoint.Z() - startPoint.Z()) > 1e-6 && endPoint.Z() < startPoint.Z())) {
-                //        //            newEndPoint = startPoint.Translated(gp_Vec(revDir) * (distanceText.toDouble()));
-                //        //        }
-                //        //        else {
-                //        //            newEndPoint = startPoint.Translated(gp_Vec(dir) * (distanceText.toDouble()));
-                //        //        }
-                //        //        //if (distanceDouble < 0) {
-                //        //            //newEndPoint = startPoint.Translated(gp_Vec(dir) * (distanceText.toDouble()));
-                //        //        //}
-                //        //        //else {
-                //        //            //newEndPoint = startPoint.Translated(gp_Vec(dir) * (distanceText.toDouble()));
-                //        //        //}
-                //        //        
-
-                //        //        // 新拖动的点距离太近约等于没有拉动这种操作不允许
-                //        //        if (newEndPoint.IsEqual(startPoint, 1e-6)) {
-                //        //            return;
-                //        //        }
-
-                //        //        m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
-                //        //        m_context->Redisplay(m_label, true);
-
-
-                //        //        //Standard_Real newDistance = newEndPoint.Distance(startPoint);
-                //        //        float mat[12] = {};
-                //        //        occAx2ToMat(tmpEndAx2, mat, 1);
-                //        //        mat[3] = newEndPoint.X();
-                //        //        mat[7] = newEndPoint.Y();
-                //        //        mat[11] = newEndPoint.Z();
-                //        //        gp_Ax2 newEndAx2;
-                //        //        occMatToAx2(mat, newEndAx2, 1);
-                //        //        m_aManipulator->SetPosition(newEndAx2);
-
-                //        //        //qInfo() << "handleMouseButtonRelease midPoint(X,Y,Z):" << midPoint.X() << " , " << midPoint.Y() << " , " << midPoint.Z() << " , ";
-                //        //        //qInfo() << "handleMouseButtonRelease endPoint(X,Y,Z):" << endPoint.X() << " , " << endPoint.Y() << " , " << endPoint.Z() << " , ";
-                //        //        //qInfo() << "handleMouseButtonRelease startPoint(X,Y,Z):" << startPoint.X() << " , " << startPoint.Y() << " , " << startPoint.Z() << " , ";
-                //        //        //qInfo() << "handleMouseButtonRelease newEndPoint(X,Y,Z):" << newEndPoint.X() << " , " << newEndPoint.Y() << " , " << newEndPoint.Z() << " , ";
-                //        //        //qInfo() << "handleMouseButtonRelease m_initialPosition(X,Y,Z):" << m_initialPosition.X() << " , " << m_initialPosition.Y() << " , " << m_initialPosition.Z() << " , ";
-
-                //        //        //qInfo() << "handleMouseButtonRelease m_lastOperation:" << m_lastOperation;
-                //        //        //qInfo() << "handleMouseButtonRelease m_meshId:" << m_meshId;
-                //        //        //qInfo() << "handleMouseButtonRelease m_aManipulator->IsAttached():" << m_aManipulator->IsAttached();
-
-                //        //        //Standard_Integer x1, y1;
-                //        //        //m_occView->v3dView()->Convert(m_initialPosition.X(), m_initialPosition.Y(), m_initialPosition.Z(), x1, y1);
-                //        //        ////qInfo() << "handleMouseButtonRelease V3d_View::Convert:" << x1 << " , " << y1;
-                //        //        //Standard_Integer x2, y2;
-                //        //        //m_occView->v3dView()->Convert(newEndPoint.X(), newEndPoint.Y(), newEndPoint.Z(), x2, y2);
-                //        //        //qInfo() << "handleMouseButtonRelease newEndPoint V3d_View::Convert:" << x2 << " , " << y2;
-
-                //        //        // 获取绑定物体的移动向量
-                //        //        gp_Vec translationVector(endPoint, newEndPoint);
-                //        //        gp_Trsf transformation;
-                //        //        transformation.SetTranslation(translationVector);
-
-                //        //        Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
-                //        //        AIS_ManipulatorObjectSequence::Iterator anObjIter(*objects);
-                //        //        for (; anObjIter.More(); anObjIter.Next())
-                //        //        {
-                //        //            const Handle(AIS_InteractiveObject)& anObj = anObjIter.ChangeValue();
-                //        //            gp_Trsf oldTransformation = anObj->Transformation();                                    
-                //        //            //anObj->SetLocalTransformation(transformation * oldTransformation);
-
-                //        //            const Handle(TopLoc_Datum3D)& aParentTrsf = anObj->CombinedParentTransformation();
-                //        //            if (!aParentTrsf.IsNull() && aParentTrsf->Form() != gp_Identity)
-                //        //            {
-                //        //                // recompute local transformation relative to parent transformation
-                //        //                const gp_Trsf aNewLocalTrsf =
-                //        //                    aParentTrsf->Trsf().Inverted() * transformation * aParentTrsf->Trsf() * oldTransformation;
-                //        //                anObj->SetLocalTransformation(aNewLocalTrsf);
-                //        //            }
-                //        //            else
-                //        //            {
-                //        //                anObj->SetLocalTransformation(transformation * oldTransformation);
-                //        //            }
-                //        //        }
-                //        //        
-
-                //        //        gp_Ax1 axis1;
-                //        //        ShowTransformTrajectory(m_context, axis1, m_initialPosition, newEndPoint);
-
-                //        //        redrawView();
-                //        //    }
-                //        //    
-                //        //    // 删除 QLineEdit 对象
-                //        //    delete m_editLine;
-                //        //    m_editLine = nullptr;  // 确保指针不再指向已删除的对象
-
-                //        //    }, Qt::UniqueConnection);
-                //        
-
-
-                //    }
-
-
-                //    return;
-                //}
                 else if (selected == m_rolabel) {
                     QString currentText = QString::fromUtf16(m_rolabel->Text().ToExtString());
 
@@ -1807,27 +1383,12 @@ namespace Mayo {
                                 gp_Ax2 currentPosition = m_aManipulator->Position();
                                 gp_Trsf currentRotation = m_aManipulator->Transformation();
 
-                                //currentRotation.
 
                                 // 获取设置前的旋转弧度
                                 gp_Quaternion deltaRotation = currentRotation.GetRotation() * m_initialRotation.GetRotation().Inverted();
                                 gp_Vec currentVec;
                                 Standard_Real currentAngle;
                                 currentRotation.GetRotation().GetVectorAndAngle(currentVec, currentAngle);
-                                /*qInfo() << "currentRotation: " << currentVec.X() << " , " << currentVec.Y() << " , " << currentVec.Z();
-                                qInfo() << "currentAngle: " << currentAngle;
-
-                                gp_Vec deltaVec;
-                                Standard_Real deltaAngle;
-                                deltaRotation.GetVectorAndAngle(deltaVec, deltaAngle);
-                                qInfo() << "deltaRotation: " << deltaVec.X() << " , " << deltaVec.Y() << " , " << deltaVec.Z();
-                                qInfo() << "deltaAngle: " << deltaAngle;
-
-                                gp_Vec orignVec;
-                                Standard_Real orignAngle;
-                                m_initialRotation.GetRotation().GetVectorAndAngle(orignVec, orignAngle);
-                                qInfo() << "orignRotation: " << orignVec.X() << " , " << orignVec.Y() << " , " << orignVec.Z();
-                                qInfo() << "orignAngle: " << orignAngle;*/
 
 
                                 gp_Quaternion currentRotationQuaternion = currentRotation.GetRotation();
@@ -1845,10 +1406,6 @@ namespace Mayo {
                                 gp_Trsf rotation;
                                 rotation.SetRotation(tmpRotationAxis, angleNew - tempAngle);
 
-                                //m_aManipulator->SetPosition(ax2);
-                                /*Handle(AIS_InteractiveObject) interactiveObj =
-                                    Handle(AIS_InteractiveObject)::DownCast(m_aManipulator);
-                                interactiveObj->SetLocalTransformation(newTrsf);*/
 
                                 // 获取平移向量（原点位置）
                                 gp_Pnt newPoint = currentPoint.Transformed(newTrsf);
@@ -2127,17 +1684,6 @@ namespace Mayo {
         return {};
     }
 
-    //void Mayo::WidgetOccViewController::dragStartCallback(void* data, SoDragger* d)
-    //{
-    //}
-    //
-    //void Mayo::WidgetOccViewController::dragFinishCallback(void* data, SoDragger* d)
-    //{
-    //}
-    //
-    //void Mayo::WidgetOccViewController::dragMotionCallback(void* data, SoDragger* d)
-    //{
-    //}
 
     void WidgetOccViewController::InputSequence::push(Input in)
     {
