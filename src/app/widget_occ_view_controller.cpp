@@ -403,6 +403,21 @@ namespace Mayo {
 
     }
 
+    Quantity_Color Mayo::WidgetOccViewController::colorFromAxisIndex(int axisIndex)
+    {
+        switch (axisIndex) {
+        case 0:
+            return Quantity_Color(Quantity_NOC_RED);
+        case 1:
+            return Quantity_Color(Quantity_NOC_GREEN);
+        case 2:
+            return Quantity_Color(Quantity_NOC_BLUE);
+        default:
+            return Quantity_Color(Quantity_NOC_BLACK);
+        }
+    }
+
+
     void Mayo::WidgetOccViewController::ShowTransformTrajectory(const Handle(AIS_InteractiveContext)& ctx, const gp_Ax1& rotationAxis, gp_Pnt startPoint, gp_Pnt endPoint)
     {
         // 在更新轨迹的函数中：
@@ -440,8 +455,14 @@ namespace Mayo {
 
         m_trajectoryShape = lineShape;
 
-        m_trajectoryShape->SetColor(Quantity_NOC_BLACK);
-        m_trajectoryShape->SetWidth(5);
+
+        int axisIndexFrozen = m_aManipulator->ActiveAxisIndex();  // 获取当前激活的轴索引
+
+        const Quantity_Color trajColor = colorFromAxisIndex(axisIndexFrozen); // 或者 axisIndex
+        m_trajectoryShape->SetColor(trajColor);
+        
+
+        m_trajectoryShape->SetWidth(3);
 
         // 关键：放到 Topmost 图层 + 提升显示优先级
         m_trajectoryShape->SetZLayer(Graphic3d_ZLayerId_Topmost);
@@ -464,10 +485,11 @@ namespace Mayo {
         std::ostringstream oss;
         oss.setf(std::ios::fixed);
         oss << std::setprecision(3) << signedDistance;
-        std::string distanceStr = oss.str() + " mm";
+        std::string distanceStr = oss.str();
 
         m_label = new AIS_TextLabel();
         m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
+        m_label->SetColor(trajColor);
 
 
 
@@ -490,8 +512,8 @@ namespace Mayo {
         gp_Dir revDir = dir.Reversed();
 
         // 箭头参数
-        Standard_Real arrowLength = 80.0;
-        Standard_Real arrowRadius = 40.0;
+        Standard_Real arrowLength = 24.0;
+        Standard_Real arrowRadius = 8.0;
 
         // 终点箭头
         gp_Pnt arrowEndPoint = endPoint.Translated(gp_Vec(revDir) * (arrowLength - 20));
@@ -501,7 +523,7 @@ namespace Mayo {
         arrowEnd = new AIS_Shape(coneEnd);
         arrowEnd->SetDisplayMode(AIS_Shaded);
         arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowEnd->SetColor(Quantity_NOC_BLACK);
+        arrowEnd->SetColor(trajColor);
 
         // Topmost + 更高 priority（保证盖住轨迹线）
         arrowEnd->SetZLayer(Graphic3d_ZLayerId_Topmost);
@@ -517,7 +539,7 @@ namespace Mayo {
         arrowStart = new AIS_Shape(coneStart);
         arrowStart->SetDisplayMode(AIS_Shaded);
         arrowStart->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowStart->SetColor(Quantity_NOC_BLACK);
+        arrowStart->SetColor(trajColor);
 
         // Topmost + 更高 priority（保证盖住轨迹线）
         arrowStart->SetZLayer(Graphic3d_ZLayerId_Topmost);

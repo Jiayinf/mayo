@@ -86,6 +86,8 @@ private:
     void handleMouseButtonRelease(const QMouseEvent* event);
     void handleMouseWheel(const QWheelEvent* event);
 
+    Quantity_Color colorFromAxisIndex(int axisIndex);
+
 
     // -- Action matching
 
