@@ -212,11 +212,22 @@ private:
 
     int m_distanceAxisIndex = -1;  // 记录当前 distance 对应的平移轴（0=X,1=Y,2=Z）
 
-    // --- 平移辅助线的绝对起点（你说的 0）---
+    // --- 平移辅助线的绝对起点 ---
     gp_Pnt m_translateAbsAnchorWorld;
     gp_Dir m_translateAbsAxisWorld;
     int    m_translateAbsAxisIndex = -1;   // 0/1/2
     bool   m_hasTranslateAbsAnchor = false;
+
+
+    // --- 旋转辅助线的绝对起点 ---
+    bool         m_hasRotateAbsAnchor = false;
+    gp_Pnt       m_rotateAbsAnchorWorld;   // pivot（通常就是 manipulator 的 Location）
+    gp_Dir       m_rotateAbsAxisWorld;     // 当前冻结的旋转轴方向（世界坐标系）
+    int          m_rotateAbsAxisIndex = -1;
+    Standard_Real m_rotateAbsAngleRad = 0.0; // 当前累计角（带符号，rad）
+
+
+
 
 };
 

@@ -1033,20 +1033,20 @@ namespace Mayo {
 
                                 // 1) 当前操纵器选中的旋转轴
                                 gp_Vec axisRotation;
-                                if (0 == tmpActiveAxisIndex)
-                                {
-                                    axisRotation = m_aManipulator->Position().XDirection();
-                                }
-                                else if (1 == tmpActiveAxisIndex)
-                                {
-                                    axisRotation = m_aManipulator->Position().YDirection();
-                                }
-                                else if (2 == tmpActiveAxisIndex)
-                                {
-                                    axisRotation = m_aManipulator->Position().XDirection().Crossed(m_aManipulator->Position().YDirection());
-                                }
+                                //if (0 == tmpActiveAxisIndex)
+                                //{
+                                //    axisRotation = m_aManipulator->Position().XDirection();
+                                //}
+                                //else if (1 == tmpActiveAxisIndex)
+                                //{
+                                //    axisRotation = m_aManipulator->Position().YDirection();
+                                //}
+                                //else if (2 == tmpActiveAxisIndex)
+                                //{
+                                //    axisRotation = m_aManipulator->Position().XDirection().Crossed(m_aManipulator->Position().YDirection());
+                                //}
 
-                                axisRotation.Normalize();
+                                //axisRotation.Normalize();
 
                                 // 2) deltaRotation 轴角分解得到的 axis/angle
                                 gp_Vec deltaAxis = axis;
@@ -1054,15 +1054,62 @@ namespace Mayo {
                                     deltaAxis.Normalize();
                                 }
 
-                                // 3) 用 dot 决定符号（绑定到操纵器轴，不看世界坐标分量）
-                                double signedAngle = angle;
-                                if (deltaAxis.Dot(axisRotation) < 0.0) {
-                                    signedAngle = -angle;
+                                //// 3) 用 dot 决定符号（绑定到操纵器轴，不看世界坐标分量）
+                                //double signedAngle = angle;
+                                //if (deltaAxis.Dot(axisRotation) < 0.0) {
+                                //    signedAngle = -angle;
+                                //}
+
+                                //// 4) 直接把 signedAngle 交给 ShowRotationTrajectory
+                                //gp_Ax1 axis1(currentPosition, axisRotation);
+                                //ShowRotationTrajectory(m_context, axis1, 0.0, signedAngle);
+
+
+
+                                // 计算 intended axisRotation：
+                                /*gp_Vec axisRotation;*/
+                                const gp_Ax2 ax2 = m_aManipulator->Position();
+
+                                if (tmpActiveAxisIndex == 0)      axisRotation = ax2.XDirection();
+                                else if (tmpActiveAxisIndex == 1) axisRotation = ax2.YDirection();
+                                else                               axisRotation = ax2.Direction(); // Z
+
+                                axisRotation.Normalize();
+
+                                // 计算 deltaRotation 轴角（建议把 w 统一到正，避免轴翻转导致符号抖动）
+                                /*gp_Quaternion deltaRotation = currentRotation.GetRotation() * m_initialRotation.GetRotation().Inverted();*/
+                                if (deltaRotation.W() < 0.0) deltaRotation = -deltaRotation;
+
+                                gp_Vec qAxis;
+                                Standard_Real qAngle = 0.0;
+                                deltaRotation.GetVectorAndAngle(qAxis, qAngle);
+
+                                // 用“qAxis 与 axisRotation 的点积”确定符号（比用位移/其它噪声源稳定）
+                                double signedAngle = (qAxis.Dot(axisRotation) < 0.0) ? -qAngle : qAngle;
+
+                                // ===== 冻结旋转轴/中心（pivot）=====
+                                if (!m_hasRotateAbsAnchor || m_rotateAbsAxisIndex != tmpActiveAxisIndex) {
+                                    m_rotateAbsAnchorWorld = m_aManipulator->Position().Location();
+                                    m_rotateAbsAxisWorld = gp_Dir(axisRotation);
+                                    m_rotateAbsAxisIndex = tmpActiveAxisIndex;
+                                    m_hasRotateAbsAnchor = true;
+                                    m_rotateAbsAngleRad = 0.0; // 新轴首次进入，可按需清零
                                 }
 
-                                // 4) 直接把 signedAngle 交给 ShowRotationTrajectory
-                                gp_Ax1 axis1(currentPosition, axisRotation);
-                                ShowRotationTrajectory(m_context, axis1, 0.0, signedAngle);
+                                // 同步当前累计角，供输入框使用
+                                m_rotateAbsAngleRad = signedAngle;
+
+                                // 轨迹绘制也统一用 frozen 轴（避免显示轴漂）
+                                const gp_Ax1 drawAxis(m_rotateAbsAnchorWorld, m_rotateAbsAxisWorld);
+                                ShowRotationTrajectory(m_context, drawAxis, 0.0, signedAngle);
+
+
+
+
+
+
+
+
 
                             }
 
@@ -1438,115 +1485,87 @@ namespace Mayo {
 
 
                         connect(m_editLine, &QLineEdit::editingFinished, this, [this]() {
-                            QString distanceText = m_editLine->text();
-                            //QString text = "Distance: " + distanceText + " mm";
-                            //qInfo() << "distanceText:" << text;
-                            if (!distanceText.isEmpty() && !m_rolabel.IsNull() && m_editLine->hasFocus()) {
-                                Standard_Real angleNew = distanceText.toDouble() * M_PI / 180;
 
-                                // 数值为0的时候相当于没有转动，这种操作不允许
-                                if (std::abs(angleNew - tempAngle) <= 1e-6) {
-                                    return;
-                                }
-
-                                m_rolabel->SetText(TCollection_ExtendedString(distanceText.toStdWString().c_str()));
-                                m_context->Redisplay(m_rolabel, true);
-
-                                // 获取当前位置作为旋转中心
-                                gp_Pnt currentPoint = m_aManipulator->Position().Location();
-                                // 获取旋转轴,tmpRotationAxis为保存的前续操作旋转方向
-                                gp_Ax1 ax1(currentPoint, tmpRotationAxis.Direction());
-                                // 获取当前位置和方向
-                                gp_Ax2 currentPosition = m_aManipulator->Position();
-                                gp_Trsf currentRotation = m_aManipulator->Transformation();
-
-
-                                // 获取设置前的旋转弧度
-                                gp_Quaternion deltaRotation = currentRotation.GetRotation() * m_initialRotation.GetRotation().Inverted();
-                                gp_Vec currentVec;
-                                Standard_Real currentAngle;
-                                currentRotation.GetRotation().GetVectorAndAngle(currentVec, currentAngle);
-
-
-                                gp_Quaternion currentRotationQuaternion = currentRotation.GetRotation();
-                                gp_Quaternion newRotationQuaternion = currentRotationQuaternion;
-                                newRotationQuaternion.SetVectorAndAngle(currentVec, angleNew);
-
-                                gp_Trsf newTrsf;
-                                newTrsf.SetRotation(newRotationQuaternion);
-
-
-                                qInfo() << "recorde last end Angle: " << tempAngle;
-                                
-
-                                // 创建旋转变换
-                                gp_Trsf rotation;
-                                rotation.SetRotation(tmpRotationAxis, angleNew - tempAngle);
-
-
-                                // 获取平移向量（原点位置）
-                                gp_Pnt newPoint = currentPoint.Transformed(newTrsf);
-
-                                // 获取旋转矩阵
-                                gp_Mat rotationMat = newTrsf.HVectorialPart();
-
-                                // 提取 Z 轴方向（旋转矩阵的第三列）
-                                gp_Dir zDir(rotationMat(1, 3), rotationMat(2, 3), rotationMat(3, 3));
-
-                                // 提取 X 轴方向（旋转矩阵的第一列）
-                                gp_Dir xDir(rotationMat(1, 1), rotationMat(2, 1), rotationMat(3, 1));
-
-                                // 确保 X 轴与 Z 轴正交
-                                if (Abs(xDir.Dot(zDir)) > 1e-10) {
-                                    // 如果不正交，计算正交的 X 轴（使用 Z 轴和任意向量叉乘）
-                                    gp_Dir tempDir = (Abs(zDir.X()) < 0.9) ? gp_Dir(1, 0, 0) : gp_Dir(0, 1, 0);
-                                    xDir = gp_Dir(zDir.Crossed(tempDir));
-                                }
-
-                                // 创建并返回 gp_Ax2
-                                gp_Ax2 newEndAx2(currentPoint, zDir, xDir);
-
-
-                                // 6. 更新 AIS_Manipulator 的位置
-                                //m_aManipulator->SetPosition(gp_Ax2(newPoint, tmpRotationAxis.Direction()));
-                                m_aManipulator->SetPosition(newEndAx2);
-
-
-                                Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
-                                AIS_ManipulatorObjectSequence::Iterator anObjIter(*objects);
-                                for (; anObjIter.More(); anObjIter.Next())
-                                {
-                                    const Handle(AIS_InteractiveObject)& anObj = anObjIter.ChangeValue();
-                                    gp_Trsf oldTransformation = anObj->Transformation();
-                                    //anObj->SetLocalTransformation(rotation * oldTransformation);
-
-                                    const Handle(TopLoc_Datum3D)& aParentTrsf = anObj->CombinedParentTransformation();
-                                    if (!aParentTrsf.IsNull() && aParentTrsf->Form() != gp_Identity)
-                                    {
-                                        // recompute local transformation relative to parent transformation
-                                        const gp_Trsf aNewLocalTrsf =
-                                            aParentTrsf->Trsf().Inverted() * rotation * aParentTrsf->Trsf() * oldTransformation;
-                                        anObj->SetLocalTransformation(aNewLocalTrsf);
-                                    }
-                                    else
-                                    {
-                                        anObj->SetLocalTransformation(rotation * oldTransformation);
-                                    }
-                                }
-
-
-                                gp_Ax1 ax1New(newEndAx2.Location(), tmpRotationAxis.Direction());
-                                ShowRotationTrajectory(m_context, ax1New, 0.0, angleNew);
-
-
-                                redrawView();
+                            if (!m_editLine || m_aManipulator.IsNull() || m_rolabel.IsNull()) {
+                                return;
                             }
 
-                            // 删除 QLineEdit 对象
+                            const QString txt = m_editLine->text().trimmed();
+                            bool ok = false;
+                            const double angleDeg = txt.toDouble(&ok);
+                            if (!ok) {
+                                delete m_editLine;
+                                m_editLine = nullptr;
+                                return;
+                            }
+
+                            const Standard_Real angleNew = angleDeg * M_PI / 180.0;
+
+                            // 若冻结状态丢失，兜底从当前 manipulator 取一次（避免输入框直接用到不稳定轴）
+                            if (!m_hasRotateAbsAnchor) {
+                                const gp_Ax2 ax2 = m_aManipulator->Position();
+                                const int idx = m_aManipulator->ActiveAxisIndex();
+                                gp_Dir axisDir = (idx == 0) ? ax2.XDirection()
+                                    : (idx == 1) ? ax2.YDirection()
+                                    : ax2.Direction();
+
+                                m_rotateAbsAnchorWorld = ax2.Location();
+                                m_rotateAbsAxisWorld = axisDir;
+                                m_rotateAbsAxisIndex = idx;
+                                m_rotateAbsAngleRad = 0.0;
+                                m_hasRotateAbsAnchor = true;
+                            }
+
+                            const Standard_Real delta = angleNew - m_rotateAbsAngleRad;
+                            if (std::abs(delta) <= 1e-6) {
+                                delete m_editLine;
+                                m_editLine = nullptr;
+                                return;
+                            }
+
+                            // 更新角度文字
+                            m_rolabel->SetText(TCollection_ExtendedString(txt.toStdWString().c_str()));
+                            m_context->Redisplay(m_rolabel, true);
+
+                            // 用 frozen 的轴 + pivot，构造“唯一的”旋转增量
+                            const gp_Ax1 rotAxis(m_rotateAbsAnchorWorld, m_rotateAbsAxisWorld);
+                            gp_Trsf rotDelta;
+                            rotDelta.SetRotation(rotAxis, delta);
+
+                            // 1) 对象：用同一个 rotDelta 更新（和拖拽一致）
+                            Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
+                            AIS_ManipulatorObjectSequence::Iterator it(*objects);
+                            for (; it.More(); it.Next()) {
+                                const Handle(AIS_InteractiveObject)& obj = it.ChangeValue();
+                                const gp_Trsf oldTrsf = obj->Transformation();
+
+                                const Handle(TopLoc_Datum3D)& parent = obj->CombinedParentTransformation();
+                                if (!parent.IsNull() && parent->Form() != gp_Identity) {
+                                    obj->SetLocalTransformation(parent->Trsf().Inverted() * rotDelta * parent->Trsf() * oldTrsf);
+                                }
+                                else {
+                                    obj->SetLocalTransformation(rotDelta * oldTrsf);
+                                }
+                            }
+
+                            // 2) 拖动器：同样用 rotDelta 变换它的 gp_Ax2（不要再拆矩阵重建）
+                            gp_Ax2 newAx2 = m_aManipulator->Position();
+                            newAx2.Transform(rotDelta);
+                            m_aManipulator->SetPosition(newAx2);
+
+                            // 3) 更新缓存角度（下一次输入用）
+                            m_rotateAbsAngleRad = angleNew;
+
+                            // 4) 轨迹显示：同一根 frozen 轴
+                            ShowRotationTrajectory(m_context, rotAxis, 0.0, angleNew);
+
+                            redrawView();
+
                             delete m_editLine;
-                            m_editLine = nullptr;  // 确保指针不再指向已删除的对象
+                            m_editLine = nullptr;
 
                             }, Qt::UniqueConnection);
+
                     }
                     return;
                 }
