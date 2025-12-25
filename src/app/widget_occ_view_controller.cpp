@@ -289,16 +289,10 @@ namespace Mayo {
 
         tempAngle = endAngle;
 
-        qInfo() << "m_aManipulator->Size()" << m_aManipulator->Size();
-        //qInfo() << "m_aManipulator->MyLength()" << m_aManipulator->MyLength();
-
         // 创建圆弧轨迹
         Handle(Geom_Circle) trajectoryCircle = new Geom_Circle(gp_Ax2(rotationAxis.Location(), rotationAxis.Direction()),
             0.4 * rotationAxis.Location().Distance(m_occView->v3dView().get()->Camera()->Eye()));
 
-        Standard_Real eyeLength = rotationAxis.Location().Distance(m_occView->v3dView().get()->Camera()->Eye());
-        qInfo() << "rotationAxis.Location()" << rotationAxis.Location().X() << " , " << rotationAxis.Location().Y() << ", "<< rotationAxis.Location().Z();
-        qInfo() << "0.4 * rotationAxis.Location().Distance: " << eyeLength;
         Handle(Geom_TrimmedCurve) trajectoryArc = new Geom_TrimmedCurve(trajectoryCircle, startAngle, endAngle);
 
         // 获取起始点和终点位置
@@ -384,9 +378,6 @@ namespace Mayo {
 
         gp_Pnt middlePoint = circleCenter.Translated(xVec + yVec);
 
-        qInfo() << "startAngle: " << startAngle;
-        qInfo() << "endAngle: " << endAngle;
-
         // 在终点显示偏移角度
         Standard_Real distance = (tempAngle - startAngle) * 180.0 / M_PI;
         m_rolabel = new AIS_TextLabel();
@@ -456,14 +447,6 @@ namespace Mayo {
         m_trajectoryShape = lineShape;
 
 
-        //int axisIndexFrozen = m_aManipulator->ActiveAxisIndex();  // 获取当前激活的轴索引
-
-        //const Quantity_Color trajColor = colorFromAxisIndex(axisIndexFrozen); // 或者 axisIndex
-        //m_trajectoryShape->SetColor(trajColor);
-
-
-
-
         // 优先使用“已记录的平移轴”（拖拽时你在外面已经写过 m_distanceAxisIndex = tmpActiveAxisIndex;）
         int axisIndexForColor = m_distanceAxisIndex;
 
@@ -517,9 +500,7 @@ namespace Mayo {
 
 
         gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
-       /* qInfo() << "ShowTransformTrajectory midPoing (x,y,z):" << midPoint.X() << ", " j << midPoint.Y() << ", " << midPoint.Z();
-        qInfo() << "ShowTransformTrajectory startPoint(X,Y,Z):" << startPoint.X() << " , " << startPoint.Y() << " , " << startPoint.Z() << " , ";
-        qInfo() << "ShowTransformTrajectory endPoint(X,Y,Z):" << endPoint.X() << " , " << endPoint.Y() << " , " << endPoint.Z() << " , ";*/
+
         m_label->SetPosition(midPoint);
 
 		// 关键：在 Display 之前设置 ZLayer，并放到最顶层
@@ -699,23 +680,6 @@ namespace Mayo {
                 
         m_inputSequence.push(event->button());
 
-       //if (m_context && !m_label.IsNull()) {
-
-       //     m_context->InitSelected();
-       //     if (m_context->MoreSelected()) {
-       //         const Handle(AIS_InteractiveObject)& selected = m_context->SelectedInteractive();
-       //         if (selected == m_label) {
-       //         }
-
-       //     }
-
-       // }
-
-       // if (m_editLine && (m_editLine->hasFocus() || m_editLine->text() != "")) {
-
-       //     return;
-       // }
-
         const QPoint currPos = m_occView->widget()->mapFromGlobal(event->globalPos());
         m_prevPos = toPosition(currPos);
 
@@ -725,23 +689,10 @@ namespace Mayo {
             m_aManipulatorDo = true;
             m_aManipulator->SetModeActivationOnDetection(Standard_True);
 
-            bool ret = m_aManipulator->IsAttached();
-            int mode = m_aManipulator->ActiveAxisIndex();
-
             if (m_aManipulatorDo && m_aManipulator->HasActiveMode())
             {
                 int tmpActiveAxisIndex = m_aManipulator->ActiveAxisIndex();
                 int tmpActiveAxisMode = m_aManipulator->ActiveMode();
-
-                //m_aManipulator->GetOwner();
-
-                //m_initialPosition = m_aManipulator->Position().Location();
-                //m_initialRotation = m_aManipulator->Transformation();
-                // 之前通过设置距离移动过需要恢复
-                /*if (setMoveLine) {
-                    tmpActiveAxisIndex = activeAxisIndexTmp;
-                    tmpActiveAxisMode = activeModeTmp;
-                }*/
 
                 if (AIS_MM_Translation == tmpActiveAxisMode)
                 {
@@ -910,7 +861,6 @@ namespace Mayo {
                         {
                             m_aManipulator->Transform(currPos.x, currPos.y, m_occView->v3dView()); // 应用鼠标从起始位置开始移动而产生的变换
 
-                            m_lastManipulatorPos = currPos;
 
                             static auto lastTime = std::chrono::high_resolution_clock::now();
                             auto curTime = std::chrono::high_resolution_clock::now();
@@ -1033,41 +983,18 @@ namespace Mayo {
 
                                 // 1) 当前操纵器选中的旋转轴
                                 gp_Vec axisRotation;
-                                //if (0 == tmpActiveAxisIndex)
-                                //{
-                                //    axisRotation = m_aManipulator->Position().XDirection();
-                                //}
-                                //else if (1 == tmpActiveAxisIndex)
-                                //{
-                                //    axisRotation = m_aManipulator->Position().YDirection();
-                                //}
-                                //else if (2 == tmpActiveAxisIndex)
-                                //{
-                                //    axisRotation = m_aManipulator->Position().XDirection().Crossed(m_aManipulator->Position().YDirection());
-                                //}
-
-                                //axisRotation.Normalize();
-
+                                
                                 // 2) deltaRotation 轴角分解得到的 axis/angle
                                 gp_Vec deltaAxis = axis;
                                 if (deltaAxis.Magnitude() > 1e-12) {
                                     deltaAxis.Normalize();
                                 }
 
-                                //// 3) 用 dot 决定符号（绑定到操纵器轴，不看世界坐标分量）
-                                //double signedAngle = angle;
-                                //if (deltaAxis.Dot(axisRotation) < 0.0) {
-                                //    signedAngle = -angle;
-                                //}
-
-                                //// 4) 直接把 signedAngle 交给 ShowRotationTrajectory
-                                //gp_Ax1 axis1(currentPosition, axisRotation);
-                                //ShowRotationTrajectory(m_context, axis1, 0.0, signedAngle);
 
 
 
                                 // 计算 intended axisRotation：
-                                /*gp_Vec axisRotation;*/
+
                                 const gp_Ax2 ax2 = m_aManipulator->Position();
 
                                 if (tmpActiveAxisIndex == 0)      axisRotation = ax2.XDirection();
@@ -1077,7 +1004,7 @@ namespace Mayo {
                                 axisRotation.Normalize();
 
                                 // 计算 deltaRotation 轴角（建议把 w 统一到正，避免轴翻转导致符号抖动）
-                                /*gp_Quaternion deltaRotation = currentRotation.GetRotation() * m_initialRotation.GetRotation().Inverted();*/
+
                                 if (deltaRotation.W() < 0.0) deltaRotation = -deltaRotation;
 
                                 gp_Vec qAxis;
@@ -1171,7 +1098,7 @@ namespace Mayo {
 
                     if (!m_editLine) {
                         m_editLine = new QLineEdit(parentWidget);
-                        setMoveLine = true;
+                        
 
                         m_editLine->setStyleSheet("background: white; color: black; border: 1px solid red;");
                         m_editLine->setAlignment(Qt::AlignCenter);
@@ -1201,15 +1128,7 @@ namespace Mayo {
 
                         // 输入框显示当前的总位移 a
                         m_editLine->setText(numberPart);
-                        // -------------------------------------------------
 
-                        //// ---------- 2. 把屏幕坐标映射到父窗口局部坐标 ----------
-                        //const QPoint globalPos = QCursor::pos();
-                        //QPoint localPos = parentWidget->mapFromGlobal(globalPos);
-                        //// 稍微往上移一点，避免挡住鼠标
-                        //localPos += QPoint(0, -50);
-                        //m_editLine->move(localPos);
-                        //// -------------------------------------------------
 
                         // ---------- 2. 把 m_label 的 3D 位置投影到屏幕坐标 ----------
                         Standard_Integer vx = 0, vy = 0;
@@ -1425,7 +1344,7 @@ namespace Mayo {
 
                     if (!m_editLine) {
                         m_editLine = new QLineEdit(parentWidget); // 覆盖在 viewer 上
-                        setMoveLine = true;
+                        
                         //m_editLine = new QLineEdit(nullptr);  // 没有父控件，系统浮动窗口
                         //m_editLine->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
                         m_editLine->setStyleSheet("background: white; color: black; border: 1px solid red;");
@@ -1442,18 +1361,11 @@ namespace Mayo {
                         //QStringList qlist = currentText.split(" ");
                         m_editLine->setText(currentText);
 
-                        QPoint editPoint;
-                        editPoint.setX(QCursor::pos().x());
-                        editPoint.setY(QCursor::pos().y() - 50);
-                        m_editLine->move(editPoint);
-                        //qInfo() << "QCursor::pos():" << QCursor::pos();
-
                         m_editLine->show();       // 显示
                         m_editLine->raise();      // 放到最上层
                         m_editLine->setFocusPolicy(Qt::StrongFocus);
                         m_editLine->setFocus();   // 获得焦点
 
-                        //qInfo() << "handleMouseButtonRelease create m_label!!!";
 
                         // 用 rolabel 的 3D 位置投影到屏幕，作为输入框位置
                         if (!m_occView || m_rolabel.IsNull()) {
@@ -1572,7 +1484,7 @@ namespace Mayo {
             }
         }
 
-        setMoveLine = false;
+        
 
         if (m_aManipulatorReady && m_aManipulatorDo)
         {

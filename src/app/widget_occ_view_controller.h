@@ -165,7 +165,7 @@ private:
     //int activeAxisIndexTmp = 0;
     //Handle(AIS_Shape) moveShape = nullptr;
     //Handle(AIS_Shape) rotationShape = nullptr;
-    bool setMoveLine = false;
+    
     gp_Ax1 tmpRotationAxis;
     Standard_Real tempAngle;
 
@@ -180,33 +180,11 @@ private:
     AIS_Manipulator::OptionsForAttach m_attachOption;
     int m_meshId;
 
-    Position m_lastManipulatorPos;
-
-    //template<class T>
-    //class CoinPtr : public boost::intrusive_ptr<T> {
-    //public:
-    //    // Too bad, VC2013 does not support constructor inheritance
-    //    //using boost::intrusive_ptr<T>::intrusive_ptr;
-    //    using inherited = boost::intrusive_ptr<T>;
-    //    CoinPtr() = default;
-    //    CoinPtr(T* p, bool add_ref = true) :inherited(p, add_ref) {}
-    //    template<class Y> CoinPtr(CoinPtr<Y> const& r) : inherited(r) {}
-
-    //    operator T* () const {
-    //        return this->get();
-    //    }//explicit bombs
-    //};
-
-
-    //CoinPtr<SoDragger> pcDragger;
-
 private:
     /*static void dragStartCallback(void* data, SoDragger* d);
     static void dragFinishCallback(void* data, SoDragger* d);
     static void dragMotionCallback(void* data, SoDragger* d);*/
     gp_Pnt m_posTransform;
-
-    bool m_isFirstDisplay = true;
 
     gp_XYZ m_axis;
 
