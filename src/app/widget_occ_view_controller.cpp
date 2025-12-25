@@ -336,8 +336,8 @@ namespace Mayo {
         ctx->Display(m_trajectoryShape, Standard_False);
 
         // 箭头参数
-        Standard_Real arrowLength = 80.0;
-        Standard_Real arrowRadius = 40.0;
+        Standard_Real arrowLength = 24.0;
+        Standard_Real arrowRadius = 8.0;
 
         dirStart.Normalize();
         gp_Ax2 startAx2(startPoint, gp_Dir(dirStart));
@@ -456,10 +456,34 @@ namespace Mayo {
         m_trajectoryShape = lineShape;
 
 
-        int axisIndexFrozen = m_aManipulator->ActiveAxisIndex();  // 获取当前激活的轴索引
+        //int axisIndexFrozen = m_aManipulator->ActiveAxisIndex();  // 获取当前激活的轴索引
 
-        const Quantity_Color trajColor = colorFromAxisIndex(axisIndexFrozen); // 或者 axisIndex
+        //const Quantity_Color trajColor = colorFromAxisIndex(axisIndexFrozen); // 或者 axisIndex
+        //m_trajectoryShape->SetColor(trajColor);
+
+
+
+
+        // 优先使用“已记录的平移轴”（拖拽时你在外面已经写过 m_distanceAxisIndex = tmpActiveAxisIndex;）
+        int axisIndexForColor = m_distanceAxisIndex;
+
+        // 次选：如果你启用了绝对 anchor 冻结，也可以用冻结轴
+        if (axisIndexForColor < 0 || axisIndexForColor > 2) {
+            if (m_hasTranslateAbsAnchor) {
+                axisIndexForColor = m_translateAbsAxisIndex;
+            }
+        }
+
+        // 兜底：最后才去读 ActiveAxisIndex（注意：输入框场景下它经常是 -1）
+        if (axisIndexForColor < 0 || axisIndexForColor > 2) {
+            axisIndexForColor = (!m_aManipulator.IsNull()) ? m_aManipulator->ActiveAxisIndex() : -1;
+        }
+
+        const Quantity_Color trajColor = colorFromAxisIndex(axisIndexForColor);
         m_trajectoryShape->SetColor(trajColor);
+
+
+
         
 
         m_trajectoryShape->SetWidth(3);
@@ -469,8 +493,6 @@ namespace Mayo {
         ctx->SetDisplayPriority(m_trajectoryShape, 10);
 
         ctx->Display(m_trajectoryShape, Standard_False);
-
-
        
         const gp_Vec v(startPoint, endPoint);
         const gp_Vec axisVec(rotationAxis.Direction());
@@ -1321,15 +1343,17 @@ namespace Mayo {
 
                                 gp_Pnt absEndPoint = startPoint.Translated(gp_Vec(drawAxisDir) * newModel);
 
-                                gp_Ax1 axis1(startPoint, drawAxisDir);
-                                ShowTransformTrajectory(m_context, axis1, startPoint, absEndPoint);
-
-                                // 在这里同步缓存：输入框路径与拖动路径统一“绝对起点/轴”
+                                // 先同步缓存：输入框路径与拖动路径统一“绝对起点/轴”
                                 m_translateAbsAnchorWorld = anchorFrozen;
                                 m_translateAbsAxisWorld = axisDirFrozen;
                                 m_translateAbsAxisIndex = axisIndexFrozen;
                                 m_hasTranslateAbsAnchor = true;
                                 m_distanceAxisIndex = axisIndexFrozen;
+
+                                gp_Ax1 axis1(startPoint, drawAxisDir);
+                                ShowTransformTrajectory(m_context, axis1, startPoint, absEndPoint);
+
+
 
                                 redrawView();
 
