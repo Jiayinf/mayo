@@ -289,6 +289,23 @@ namespace Mayo {
 
         tempAngle = endAngle;
 
+        // ===== 新增：旋转轨迹/文字颜色跟随当前旋转轴（X/Y/Z） =====
+        // 通过 rotationAxis.Direction() 与操纵器当前 Ax2 的 X/Y/Z 方向做 dot，取最接近的轴作为颜色来源
+        Quantity_Color trajColor(Quantity_NOC_BLACK);
+        if (!m_aManipulator.IsNull()) {
+            const gp_Ax2 ax2 = m_aManipulator->Position();
+            const gp_Dir d = rotationAxis.Direction();
+
+            const double dx = std::abs(d.Dot(ax2.XDirection()));
+            const double dy = std::abs(d.Dot(ax2.YDirection()));
+            const double dz = std::abs(d.Dot(ax2.Direction())); // Z
+
+            int axisIndexForColor = (dx >= dy && dx >= dz) ? 0 : (dy >= dz ? 1 : 2);
+            trajColor = colorFromAxisIndex(axisIndexForColor); // 0->红,1->绿,2->蓝
+        }
+        // ==========================================================
+
+
         // 创建圆弧轨迹
         Handle(Geom_Circle) trajectoryCircle = new Geom_Circle(gp_Ax2(rotationAxis.Location(), rotationAxis.Direction()),
             0.4 * rotationAxis.Location().Distance(m_occView->v3dView().get()->Camera()->Eye()));
@@ -319,8 +336,9 @@ namespace Mayo {
         m_trajectoryShape = new AIS_Shape(edgeMaker.Edge());
 
         // 设置显示属性
-        m_trajectoryShape->SetColor(Quantity_NOC_GREEN);
-        //trajectoryShape->SetTypeOfLine(Aspect_TOL_DASH);
+        /*m_trajectoryShape->SetColor(Quantity_NOC_GREEN);*/
+        m_trajectoryShape->SetColor(trajColor);
+
         m_trajectoryShape->SetWidth(5);
 
         m_trajectoryShape->SetZLayer(Graphic3d_ZLayerId_Topmost);
@@ -346,7 +364,9 @@ namespace Mayo {
         arrowEnd = new AIS_Shape(coneEnd);
         arrowEnd->SetDisplayMode(AIS_Shaded);
         arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowEnd->SetColor(Quantity_NOC_GREEN);
+        /*arrowEnd->SetColor(Quantity_NOC_GREEN);*/
+        arrowEnd->SetColor(trajColor);
+
         arrowEnd->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(arrowEnd, 11);
         ctx->Display(arrowEnd, false);
@@ -354,7 +374,9 @@ namespace Mayo {
         arrowStart = new AIS_Shape(coneStart);
         arrowStart->SetDisplayMode(AIS_Shaded);
         arrowStart->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowStart->SetColor(Quantity_NOC_GREEN);
+        /*arrowStart->SetColor(Quantity_NOC_GREEN);*/
+        arrowStart->SetColor(trajColor);
+
         arrowStart->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(arrowStart, 11);
         ctx->Display(arrowStart, false);
@@ -380,11 +402,17 @@ namespace Mayo {
 
         // 在终点显示偏移角度
         Standard_Real distance = (tempAngle - startAngle) * 180.0 / M_PI;
+        //m_rolabel = new AIS_TextLabel();
+        ////m_rolabel->SetText((/*"Distance: " + */std::to_string(distance)/* + " mm"*/).c_str());
+        //m_rolabel->SetText(TCollection_ExtendedString(std::to_string(distance).c_str()));
+        ////m_rolabel->SetPosition(rotationAxis.Location().XYZ() + rotationAxis.Direction().XYZ() * 1.2);
+        //m_rolabel->SetPosition(middlePoint.XYZ());
+
         m_rolabel = new AIS_TextLabel();
-        //m_rolabel->SetText((/*"Distance: " + */std::to_string(distance)/* + " mm"*/).c_str());
         m_rolabel->SetText(TCollection_ExtendedString(std::to_string(distance).c_str()));
-        //m_rolabel->SetPosition(rotationAxis.Location().XYZ() + rotationAxis.Direction().XYZ() * 1.2);
+        m_rolabel->SetColor(trajColor); // 新增：文字颜色跟随旋转轴
         m_rolabel->SetPosition(middlePoint.XYZ());
+
         
         // 关键：放到最顶层
         m_rolabel->SetZLayer(Graphic3d_ZLayerId_Topmost);
@@ -1029,11 +1057,6 @@ namespace Mayo {
                                 // 轨迹绘制也统一用 frozen 轴（避免显示轴漂）
                                 const gp_Ax1 drawAxis(m_rotateAbsAnchorWorld, m_rotateAbsAxisWorld);
                                 ShowRotationTrajectory(m_context, drawAxis, 0.0, signedAngle);
-
-
-
-
-
 
 
 
