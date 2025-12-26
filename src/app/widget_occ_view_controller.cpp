@@ -36,6 +36,10 @@
 #include <gp_GTrsf.hxx>
 #include <math_SVD.hxx>
 
+#include <PrsDim_LengthDimension.hxx>
+#include <Prs3d_DimensionAspect.hxx>
+
+
 //#include "SoFCCSysDragger.h"
 //using namespace Gui;
 
@@ -336,7 +340,7 @@ namespace Mayo {
         m_trajectoryShape = new AIS_Shape(edgeMaker.Edge());
 
         // 设置显示属性
-        /*m_trajectoryShape->SetColor(Quantity_NOC_GREEN);*/
+
         m_trajectoryShape->SetColor(trajColor);
 
         m_trajectoryShape->SetWidth(5);
@@ -364,7 +368,6 @@ namespace Mayo {
         arrowEnd = new AIS_Shape(coneEnd);
         arrowEnd->SetDisplayMode(AIS_Shaded);
         arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
-        /*arrowEnd->SetColor(Quantity_NOC_GREEN);*/
         arrowEnd->SetColor(trajColor);
 
         arrowEnd->SetZLayer(Graphic3d_ZLayerId_Topmost);
@@ -374,7 +377,6 @@ namespace Mayo {
         arrowStart = new AIS_Shape(coneStart);
         arrowStart->SetDisplayMode(AIS_Shaded);
         arrowStart->SetMaterial(Graphic3d_NOM_PLASTIC);
-        /*arrowStart->SetColor(Quantity_NOC_GREEN);*/
         arrowStart->SetColor(trajColor);
 
         arrowStart->SetZLayer(Graphic3d_ZLayerId_Topmost);
@@ -402,11 +404,6 @@ namespace Mayo {
 
         // 在终点显示偏移角度
         Standard_Real distance = (tempAngle - startAngle) * 180.0 / M_PI;
-        //m_rolabel = new AIS_TextLabel();
-        ////m_rolabel->SetText((/*"Distance: " + */std::to_string(distance)/* + " mm"*/).c_str());
-        //m_rolabel->SetText(TCollection_ExtendedString(std::to_string(distance).c_str()));
-        ////m_rolabel->SetPosition(rotationAxis.Location().XYZ() + rotationAxis.Direction().XYZ() * 1.2);
-        //m_rolabel->SetPosition(middlePoint.XYZ());
 
         m_rolabel = new AIS_TextLabel();
         m_rolabel->SetText(TCollection_ExtendedString(std::to_string(distance).c_str()));
@@ -445,10 +442,16 @@ namespace Mayo {
             m_trajectoryShape.Nullify();
         }
 
-        if (!m_label.IsNull()) {
-            ctx->Remove(m_label, Standard_False); // 移除旧轨迹的文字
-            m_label.Nullify();
+        //if (!m_label.IsNull()) {
+        //    ctx->Remove(m_label, Standard_False); // 移除旧轨迹的文字
+        //    m_label.Nullify();
+        //}
+
+        if (!m_translateDim.IsNull()) {
+            ctx->Remove(m_translateDim, Standard_False);
+            m_translateDim.Nullify();
         }
+
 
         if (!m_rolabel.IsNull()) {
             ctx->Remove(m_rolabel, Standard_False); // 移除旧轨迹的文字
@@ -517,24 +520,80 @@ namespace Mayo {
         // 按固定小数位输出，避免 std::to_string 冗长
         std::ostringstream oss;
         oss.setf(std::ios::fixed);
-        oss << std::setprecision(3) << signedDistance;
-        std::string distanceStr = oss.str();
 
-        m_label = new AIS_TextLabel();
-        m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
-        m_label->SetColor(trajColor);
+  //      oss << std::setprecision(3) << signedDistance;
+  //      std::string distanceStr = oss.str();
 
+  //      m_label = new AIS_TextLabel();
+  //      m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
+  //      m_label->SetColor(trajColor);
 
+  //      gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
 
+  //      m_label->SetPosition(midPoint);
 
+		//// 关键：在 Display 之前设置 ZLayer，并放到最顶层
+  //      m_label->SetZLayer(Graphic3d_ZLayerId_Topmost);
+
+  //      ctx->Display(m_label, Standard_False);
+
+        // =======================12.26 新增=======================
+        // 缓存当前距离（用于双击输入框预填）
+        m_translateDimValueMm = signedDistance;
+
+        // 缓存标注位置（用于输入框定位）
         gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
+        m_translateDimTextPosWorld = midPoint;
+        m_hasTranslateDimTextPosWorld = true;
 
-        m_label->SetPosition(midPoint);
+        // 计算一个包含 edge 的标注平面（法向必须 ? edge 方向）
+        gp_Dir edgeDir(gp_Vec(startPoint, endPoint));
+        gp_Dir viewDir(0, 0, 1);
+        if (m_occView && m_occView->v3dView().get() && m_occView->v3dView().get()->Camera()) {
+            const auto cam = m_occView->v3dView().get()->Camera();
+            const gp_Vec vd(cam->Direction().X(), cam->Direction().Y(), cam->Direction().Z());
+            if (vd.Magnitude() > 1e-9) {
+                viewDir = gp_Dir(vd);
+            }
+        }
 
-		// 关键：在 Display 之前设置 ZLayer，并放到最顶层
-        m_label->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        // plane normal = edgeDir x viewDir（保证 normal ? edgeDir，且尽量“面向视角”）
+        gp_Vec n = gp_Vec(edgeDir).Crossed(gp_Vec(viewDir));
+        if (n.Magnitude() < 1e-9) {
+            // camera 正好沿着轴看时，cross 可能退化，做兜底
+            n = gp_Vec(edgeDir).Crossed(gp_Vec(0, 0, 1));
+            if (n.Magnitude() < 1e-9) {
+                n = gp_Vec(edgeDir).Crossed(gp_Vec(1, 0, 0));
+            }
+        }
+        gp_Pln dimPln(startPoint, gp_Dir(n));
 
-        ctx->Display(m_label, Standard_False);
+        // 用同一条 edge 做长度标注（edge 在前面已经 MakeEdge 了）
+        m_translateDim = new PrsDim_LengthDimension(edge, dimPln);
+
+        // dimension 外观（参考你给的示例）
+        Handle(Prs3d_DimensionAspect) dimAsp = new Prs3d_DimensionAspect();
+        dimAsp->MakeArrows3d(false);
+        dimAsp->MakeText3d(false);
+        dimAsp->MakeTextShaded(true);
+        dimAsp->MakeUnitsDisplayed(true);
+        dimAsp->TextAspect()->SetHeight(20);
+        dimAsp->SetCommonColor(trajColor);
+
+        m_translateDim->SetDimensionAspect(dimAsp);
+        m_translateDim->SetModelUnits("mm");
+        m_translateDim->SetDisplayUnits("mm");
+
+        // 放到顶层，优先级略高于线
+        m_translateDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(m_translateDim, 12);
+
+        ctx->Display(m_translateDim, Standard_False);
+
+        // ==============================================
+
+
+
 
         // 算方向向量
         gp_Vec vec(startPoint, endPoint);
@@ -1104,7 +1163,7 @@ namespace Mayo {
         if (!hadDynamicAction)
             this->signalMouseButtonClicked.send(fnOccMouseBtn(event->button()));
 
-        if (m_context && (!m_label.IsNull() || !m_rolabel.IsNull())) {
+        if (m_context && (!m_translateDim.IsNull() || !m_rolabel.IsNull())) {
 
 
             m_context->InitSelected();
@@ -1113,9 +1172,13 @@ namespace Mayo {
 
 
                 // 处理距离文本（平移）输入框
-                if (selected == m_label) {
-                    // 例如 "12.345 mm"
-                    QString currentText = QString::fromUtf16(m_label->Text().ToExtString());
+                if (selected == m_translateDim) {
+                    
+                    //QString currentText = QString::fromUtf16(m_label->Text().ToExtString());
+                    
+                    // 直接用缓存的距离值（不再从 label 文本拆）
+                    const double oldDistanceMm = m_translateDimValueMm;
+                    const QString numberPart = QString::number(oldDistanceMm, 'f', 3);
 
                     QWidget* parentWidget = m_occView->widget()->parentWidget();  // 通常是 WidgetGuiDocument
 
@@ -1134,22 +1197,22 @@ namespace Mayo {
                         m_editLine->setFrame(true);
                         m_editLine->hide();
 
-                        // ---------- 1. 从 label 中取出“旧距离 a” ----------
-                        // currentText 格式类似 "12.345 mm"
-                        QStringList qlist = currentText.split(' ', Qt::SkipEmptyParts);
-                        QString numberPart = currentText;
-                        if (!qlist.isEmpty()) {
-                            // 第一个 token 当作数值部分
-                            numberPart = qlist[0];
-                        }
+                        //// ---------- 1. 从 label 中取出“旧距离 a” ----------
+                        //// currentText 格式类似 "12.345 mm"
+                        //QStringList qlist = currentText.split(' ', Qt::SkipEmptyParts);
+                        //QString numberPart = currentText;
+                        //if (!qlist.isEmpty()) {
+                        //    // 第一个 token 当作数值部分
+                        //    numberPart = qlist[0];
+                        //}
 
-                        bool okOld = false;
-                        double oldDistanceMm = numberPart.toDouble(&okOld);
-                        if (!okOld) {
-                            oldDistanceMm = 0.0;
-                        }
+                        //bool okOld = false;
+                        //double oldDistanceMm = numberPart.toDouble(&okOld);
+                        //if (!okOld) {
+                        //    oldDistanceMm = 0.0;
+                        //}
 
-                        // 输入框显示当前的总位移 a
+                        //// 输入框显示当前的总位移 a
                         m_editLine->setText(numberPart);
 
 
@@ -1157,7 +1220,13 @@ namespace Mayo {
                         Standard_Integer vx = 0, vy = 0;
 
                         // m_label 的 3D 位置
-                        const gp_Pnt labelPnt = m_label->Position();
+                        /*const gp_Pnt labelPnt = m_label->Position();*/
+
+                        gp_Pnt labelPnt = m_aManipulator->Position().Location();
+                        if (m_hasTranslateDimTextPosWorld) {
+                            labelPnt = m_translateDimTextPosWorld;
+                        }
+
 
                         // OCCT 投影：世界坐标 -> 视口像素坐标
                         m_occView->v3dView()->Convert(labelPnt.X(), labelPnt.Y(), labelPnt.Z(), vx, vy);
@@ -1287,9 +1356,12 @@ namespace Mayo {
 
                                 // 更新 label：显示新的总位移 b
                                 {
-                                    QString text = QString("%1 mm").arg(newDistanceMm, 0, 'f', 3);
-                                    m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
-                                    m_context->Redisplay(m_label, Standard_False);
+                                    //QString text = QString("%1 mm").arg(newDistanceMm, 0, 'f', 3);
+                                    //m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
+                                    //m_context->Redisplay(m_label, Standard_False);
+
+                                    m_translateDimValueMm = newDistanceMm;
+
                                 }
 
                                 // 1) 先让拖动器也走同一个增量 Δ（不要“拍”到 startPoint+b）

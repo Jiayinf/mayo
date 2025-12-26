@@ -14,6 +14,8 @@
 #include <AIS_Manipulator.hxx>
 #include <AIS_Shape.hxx>
 #include <AIS_TextLabel.hxx>
+#include <PrsDim_LengthDimension.hxx>
+
 
 #include <QtCore/QObject>
 #include <QtCore/QPoint>
@@ -158,6 +160,17 @@ private:
     Handle(AIS_Shape) m_trajectoryShape = nullptr;
     Handle(AIS_TextLabel) m_label = nullptr;
     Handle(AIS_TextLabel) m_rolabel = nullptr;
+
+    // 新增：平移长度标注（PrsDim）
+    Handle(PrsDim_LengthDimension) m_translateDim = nullptr;
+
+    // 新增：缓存当前显示的平移距离（用于双击输入框时预填 oldDistanceMm）
+    double m_translateDimValueMm = 0.0;
+
+    // 新增：缓存标注的世界坐标（用于把输入框放在标注附近）
+    gp_Pnt m_translateDimTextPosWorld;
+    bool m_hasTranslateDimTextPosWorld = false;
+
     Handle(AIS_Shape) arrowStart = nullptr;
     Handle(AIS_Shape) arrowEnd = nullptr;
     QLineEdit* m_editLine = nullptr;
