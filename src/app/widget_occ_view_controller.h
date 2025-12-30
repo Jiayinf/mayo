@@ -1,4 +1,4 @@
-/****************************************************************************
+ï»¿/****************************************************************************
 ** Copyright (c) 2021, Fougue Ltd. <http://www.fougue.pro>
 ** All rights reserved.
 ** See license at https://github.com/fougue/mayo/blob/master/LICENSE.txt
@@ -160,13 +160,13 @@ namespace Mayo {
         Handle(AIS_Shape) m_trajectoryShape = nullptr;
         Handle(AIS_TextLabel) m_label = nullptr;
         Handle(AIS_TextLabel) m_rolabel = nullptr;
-        // Æ½ÒÆ¾àÀë³ß´ç±ê×¢£¨¶ÀÁ¢ÓÚ¹ì¼£ÏßµÄ±ê×¢¸¨ÖúÏß+¼ıÍ·+ÎÄ×Ö£©
+        // å¹³ç§»è·ç¦»å°ºå¯¸æ ‡æ³¨ï¼ˆç‹¬ç«‹äºè½¨è¿¹çº¿çš„æ ‡æ³¨è¾…åŠ©çº¿+ç®­å¤´+æ–‡å­—ï¼‰
         Handle(PrsDim_LengthDimension) m_translateDim = nullptr;
 
-        // »º´æµ±Ç°Æ½ÒÆ¾àÀë£¨ÓÃÓÚË«»÷±ê×¢Ê±Ô¤ÌîÊäÈë¿ò£©
+        // ç¼“å­˜å½“å‰å¹³ç§»è·ç¦»ï¼ˆç”¨äºåŒå‡»æ ‡æ³¨æ—¶é¢„å¡«è¾“å…¥æ¡†ï¼‰
         double m_translateDimValueMm = 0.0;
 
-        // »º´æ±ê×¢ÎÄ×ÖÎ»ÖÃ£¨ÓÃÓÚÊäÈë¿ò¶¨Î»£©
+        // ç¼“å­˜æ ‡æ³¨æ–‡å­—ä½ç½®ï¼ˆç”¨äºè¾“å…¥æ¡†å®šä½ï¼‰
         gp_Pnt m_translateDimTextPosWorld;
         bool m_hasTranslateDimTextPosWorld = false;
 

@@ -36,13 +36,10 @@
 #include <gp_GTrsf.hxx>
 #include <math_SVD.hxx>
 
-#include <PrsDim_LengthDimension.hxx>
-#include <Prs3d_DimensionAspect.hxx>
-#include <gp_Ax3.hxx>
-#include <gp_Pln.hxx>
-#include <cmath>
 
 
+//#include "SoFCCSysDragger.h"
+//using namespace Gui;
 
 //#include "SoFCCSysDragger.h"
 //using namespace Gui;
@@ -259,16 +256,20 @@ namespace Mayo {
         return m_posTransform;
     }
 
-    // ???
     void Mayo::WidgetOccViewController::ShowRotationTrajectory(const Handle(AIS_InteractiveContext)& ctx,
         const gp_Ax1& rotationAxis,
         double startAngle,
         double endAngle)
     {
-        // ????
         if (!m_trajectoryShape.IsNull()) {
             ctx->Remove(m_trajectoryShape, Standard_False); // ???
             m_trajectoryShape.Nullify();
+        }
+
+        // 清掉平移的距离标注（辅助直线 + 文字），保证与轨迹同步消失
+        if (!m_translateDim.IsNull()) {
+            ctx->Remove(m_translateDim, Standard_False);
+            m_translateDim.Nullify();
         }
 
         if (!m_label.IsNull()) {
@@ -292,6 +293,7 @@ namespace Mayo {
         }
 
         if (std::abs(endAngle - startAngle) <= 1e-6) {
+            ctx->UpdateCurrentViewer(); // 确保 Remove 立即刷新显示
             return;
         }
 
@@ -473,8 +475,8 @@ namespace Mayo {
             arrowEnd.Nullify();
         }
 
-        // ??
         if (endPoint.IsEqual(startPoint, 1e-6)) {
+            ctx->UpdateCurrentViewer(); // 确保 Remove 立即刷新显示
             return;
         }
         TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(startPoint, endPoint);
@@ -600,7 +602,7 @@ namespace Mayo {
         asp->MakeUnitsDisplayed(true);
         asp->MakeTextShaded(true);
         asp->TextAspect()->SetHeight(20);
-        asp->SetCommonColor(Quantity_NOC_RED); // 先固定红色，确保你能看见
+        asp->SetCommonColor(Quantity_NOC_BLACK); // 先固定红色，确保你能看见
         m_translateDim->SetDimensionAspect(asp);
         m_translateDim->SetModelUnits("mm");
         m_translateDim->SetDisplayUnits("mm");
