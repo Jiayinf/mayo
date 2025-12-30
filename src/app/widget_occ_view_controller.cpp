@@ -1,4 +1,4 @@
-/****************************************************************************
+Ôªø/****************************************************************************
 ** Copyright (c) 2021, Fougue Ltd. <http://www.fougue.pro>
 ** All rights reserved.
 ** See license at https://github.com/fougue/mayo/blob/master/LICENSE.txt
@@ -38,6 +38,10 @@
 
 #include <PrsDim_LengthDimension.hxx>
 #include <Prs3d_DimensionAspect.hxx>
+#include <gp_Ax3.hxx>
+#include <gp_Pln.hxx>
+#include <cmath>
+
 
 
 //#include "SoFCCSysDragger.h"
@@ -89,7 +93,8 @@ namespace Mayo {
             RubberBandWidget(QWidget* parent)
 #if OCC_VERSION_HEX >= 0x070600
                 : RubberBandWidget_ParentType(parent)
-            {}
+            {
+            }
 #else
                 : RubberBandWidget_ParentType(QRubberBand::Rectangle, parent)
             {
@@ -174,15 +179,15 @@ namespace Mayo {
         m_aSequence->Clear();
         m_aSequence->Append(object);
 
-        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // Ω˚”√¡À X ÷·µƒÀı∑≈
-        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // Ω˚”√¡À Y ÷·µƒÀı∑≈
-        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // Ω˚”√¡À Z ÷·µƒÀı∑≈
+        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  X 
+        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  Y 
+        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  Z 
 
         m_attachOption.AdjustPosition = true;
         m_attachOption.AdjustSize = false;
         m_attachOption.EnableModes = false;
 
-        // Ω´≤Ÿ◊›∆˜∏Ω‘⁄¥¥Ω®µƒ≥§∑ΩÃÂ…œ
+        // ??
         //m_aManipulator->Attach(object, m_attachOption);
         m_aManipulator->Attach(m_aSequence, m_attachOption);
 
@@ -190,12 +195,12 @@ namespace Mayo {
         occMatToAx2(mat, tmpAx2, 0);
         m_aManipulator->SetPosition(tmpAx2);
 
-        // ∆Ù”√÷∏∂®µƒ≤Ÿ◊›ƒ£ Ω
-        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // ∆Ù”√“∆∂Ø
-        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // ∆Ù”√–˝◊™
-        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // ∆Ù”√Àı∑≈
+        // ????
+        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // ?
+        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // ?
+        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // 
 
-        // º§ªÓ≤Ÿ◊›∆˜
+        // 
         //m_aManipulator->SetModeActivationOnDetection(Standard_True);
     }
 
@@ -207,25 +212,25 @@ namespace Mayo {
             m_aSequence->Append(gfxObjects.at(i));
         }
 
-        // ø…“‘”√ SetPart Ω˚”√ªÚ∆Ù”√ƒ≥–©÷·µƒ∆Ω“∆°¢–˝◊™ªÚÀı∑≈µƒø… ”≤ø∑÷
-        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // Ω˚”√¡À X ÷·µƒÀı∑≈
-        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // Ω˚”√¡À Y ÷·µƒÀı∑≈
-        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // Ω˚”√¡À Z ÷·µƒÀı∑≈
+        //  SetPart ????????
+        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  X 
+        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  Y 
+        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  Z 
 
 
         m_attachOption.AdjustPosition = true;
         m_attachOption.AdjustSize = false;
         m_attachOption.EnableModes = false;
 
-        // Ω´≤Ÿ◊›∆˜∏Ω‘⁄¥¥Ω®µƒ≥§∑ΩÃÂ…œ
+        // ??
         m_aManipulator->Attach(m_aSequence, m_attachOption);
 
-        //// ∆Ù”√÷∏∂®µƒ≤Ÿ◊›ƒ£ Ω
-        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // ∆Ù”√“∆∂Ø
-        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // ∆Ù”√–˝◊™
-        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // ∆Ù”√Àı∑≈
+        //// ????
+        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // ?
+        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // ?
+        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // 
 
-        // º§ªÓ≤Ÿ◊›∆˜
+        // 
         //m_aManipulator->SetModeActivationOnDetection(Standard_True);
     }
 
@@ -241,7 +246,7 @@ namespace Mayo {
 
     void Mayo::WidgetOccViewController::stopManipulator()
     {
-        // º§ªÓ≤Ÿ◊›∆˜
+        // 
         m_aManipulator->SetModeActivationOnDetection(Standard_False);
         //m_aManipulator->DeactivateCurrentMode();
         m_aManipulator->Detach();
@@ -254,35 +259,35 @@ namespace Mayo {
         return m_posTransform;
     }
 
-    // –˝◊™πÏº£ø… ”ªØ
+    // ???
     void Mayo::WidgetOccViewController::ShowRotationTrajectory(const Handle(AIS_InteractiveContext)& ctx,
         const gp_Ax1& rotationAxis,
         double startAngle,
         double endAngle)
     {
-        // ‘⁄∏¸–¬πÏº£µƒ∫Ø ˝÷–£∫
+        // ????
         if (!m_trajectoryShape.IsNull()) {
-            ctx->Remove(m_trajectoryShape, Standard_False); // “∆≥˝æ…πÏº£
+            ctx->Remove(m_trajectoryShape, Standard_False); // ???
             m_trajectoryShape.Nullify();
         }
 
         if (!m_label.IsNull()) {
-            ctx->Remove(m_label, Standard_False); // “∆≥˝æ…πÏº£µƒŒƒ◊÷
+            ctx->Remove(m_label, Standard_False); // ???
             m_label.Nullify();
         }
 
         if (!m_rolabel.IsNull()) {
-            ctx->Remove(m_rolabel, Standard_False); // “∆≥˝æ…πÏº£µƒŒƒ◊÷
+            ctx->Remove(m_rolabel, Standard_False); // ???
             m_rolabel.Nullify();
         }
 
         if (!arrowStart.IsNull()) {
-            ctx->Remove(arrowStart, Standard_False); // “∆≥˝ø™ º∑ΩœÚº˝Õ∑
+            ctx->Remove(arrowStart, Standard_False); // ???
             arrowStart.Nullify();
         }
 
         if (!arrowEnd.IsNull()) {
-            ctx->Remove(arrowEnd, Standard_False); // “∆≥˝Ω· ¯∑ΩœÚº˝Õ∑
+            ctx->Remove(arrowEnd, Standard_False); // ??
             arrowEnd.Nullify();
         }
 
@@ -293,8 +298,8 @@ namespace Mayo {
 
         tempAngle = endAngle;
 
-        // ===== –¬‘ˆ£∫–˝◊™πÏº£/Œƒ◊÷—’…´∏˙ÀÊµ±«∞–˝◊™÷·£®X/Y/Z£© =====
-        // Õ®π˝ rotationAxis.Direction() ”Î≤Ÿ◊›∆˜µ±«∞ Ax2 µƒ X/Y/Z ∑ΩœÚ◊ˆ dot£¨»°◊ÓΩ”Ω¸µƒ÷·◊˜Œ™—’…´¿¥‘¥
+        // ===== ??/????X/Y/Z =====
+        // ? rotationAxis.Direction() ? Ax2  X/Y/Z  dot?????
         Quantity_Color trajColor(Quantity_NOC_BLACK);
         if (!m_aManipulator.IsNull()) {
             const gp_Ax2 ax2 = m_aManipulator->Position();
@@ -305,24 +310,24 @@ namespace Mayo {
             const double dz = std::abs(d.Dot(ax2.Direction())); // Z
 
             int axisIndexForColor = (dx >= dy && dx >= dz) ? 0 : (dy >= dz ? 1 : 2);
-            trajColor = colorFromAxisIndex(axisIndexForColor); // 0->∫Ï,1->¬Ã,2->¿∂
+            trajColor = colorFromAxisIndex(axisIndexForColor); // 0->,1->,2->
         }
         // ==========================================================
 
 
-        // ¥¥Ω®‘≤ª°πÏº£
+        // ??
         Handle(Geom_Circle) trajectoryCircle = new Geom_Circle(gp_Ax2(rotationAxis.Location(), rotationAxis.Direction()),
             0.4 * rotationAxis.Location().Distance(m_occView->v3dView().get()->Camera()->Eye()));
 
         Handle(Geom_TrimmedCurve) trajectoryArc = new Geom_TrimmedCurve(trajectoryCircle, startAngle, endAngle);
 
-        // ªÒ»°∆ ºµ„∫Õ÷’µ„Œª÷√
+        // ???
         gp_Pnt startPoint = trajectoryArc->Value(startAngle);
         gp_Pnt endPoint = trajectoryArc->Value(endAngle);
 
-        // º∆À„∆µ„º˝Õ∑∑ΩœÚ
+        // ?
         gp_Vec dirStart = gp_Vec(trajectoryArc->Value(startAngle + 0.01), trajectoryArc->Value(startAngle));
-        // º∆À„÷’µ„º˝Õ∑∑ΩœÚ£®∑ΩœÚ“™∑¥£©
+        // ?????
         gp_Vec dirEnd = gp_Vec(trajectoryArc->Value(endAngle - 0.01), trajectoryArc->Value(endAngle));
 
         if (endAngle < 0) {
@@ -336,10 +341,10 @@ namespace Mayo {
 
         BRepBuilderAPI_MakeEdge edgeMaker(trajectoryArc);
 
-        // ¥¥Ω®œ‘ æ∂‘œÛ
+        // ?
         m_trajectoryShape = new AIS_Shape(edgeMaker.Edge());
 
-        // …Ë÷√œ‘ æ Ù–‘
+        // ?
 
         m_trajectoryShape->SetColor(trajColor);
 
@@ -348,10 +353,10 @@ namespace Mayo {
         m_trajectoryShape->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(m_trajectoryShape, 10);
 
-        // œ‘ æπÏº£
+        // ??
         ctx->Display(m_trajectoryShape, Standard_False);
 
-        // º˝Õ∑≤Œ ˝
+        // ?
         Standard_Real arrowLength = 24.0;
         Standard_Real arrowRadius = 8.0;
 
@@ -364,7 +369,7 @@ namespace Mayo {
         TopoDS_Shape coneEnd = BRepPrimAPI_MakeCone(endAx2, arrowRadius, 0.0, arrowLength);
 
 
-        // ◊™Œ™ AIS_Shape œ‘ æ
+        // ?? AIS_Shape ?
         arrowEnd = new AIS_Shape(coneEnd);
         arrowEnd->SetDisplayMode(AIS_Shaded);
         arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
@@ -384,17 +389,17 @@ namespace Mayo {
         ctx->Display(arrowStart, false);
 
 
-        // º∆À„‘≤ª°µƒœ‡πÿ–≈œ¢
-        gp_Pnt circleCenter = trajectoryCircle->Location(); // ‘≤–ƒŒª÷√
-        Standard_Real middleAngle = (startAngle + tempAngle) / 2.0; // º∆À„÷–º‰Ω«∂»
-        Standard_Real radius = trajectoryCircle->Radius(); // ‘≤µƒ∞Îæ∂
-        
-        // ªÒ»°‘≤ª°À˘‘⁄∆Ω√Êµƒ◊¯±Íœµ
+        // ??
+        gp_Pnt circleCenter = trajectoryCircle->Location(); // ?
+        Standard_Real middleAngle = (startAngle + tempAngle) / 2.0; // ?
+        Standard_Real radius = trajectoryCircle->Radius(); // ???
+
+        // ????
         gp_Ax2 axis = trajectoryCircle->Position();
         gp_Dir xDir = axis.XDirection();
         gp_Dir yDir = axis.YDirection();
 
-        // º∆À„÷–º‰µ„‘⁄‘≤ª°…œµƒŒª÷√
+        // ??
         gp_Vec xVec(xDir);
         gp_Vec yVec(yDir);
         xVec *= radius * cos(middleAngle);
@@ -402,16 +407,16 @@ namespace Mayo {
 
         gp_Pnt middlePoint = circleCenter.Translated(xVec + yVec);
 
-        // ‘⁄÷’µ„œ‘ æ∆´“∆Ω«∂»
+        // ?????
         Standard_Real distance = (tempAngle - startAngle) * 180.0 / M_PI;
 
         m_rolabel = new AIS_TextLabel();
         m_rolabel->SetText(TCollection_ExtendedString(std::to_string(distance).c_str()));
-        m_rolabel->SetColor(trajColor); // –¬‘ˆ£∫Œƒ◊÷—’…´∏˙ÀÊ–˝◊™÷·
+        m_rolabel->SetColor(trajColor); // ??
         m_rolabel->SetPosition(middlePoint.XYZ());
 
-        
-        // πÿº¸£∫∑≈µΩ◊Ó∂•≤„
+
+        // ???
         m_rolabel->SetZLayer(Graphic3d_ZLayerId_Topmost);
 
         ctx->Display(m_rolabel, Standard_False);
@@ -436,14 +441,14 @@ namespace Mayo {
 
     void Mayo::WidgetOccViewController::ShowTransformTrajectory(const Handle(AIS_InteractiveContext)& ctx, const gp_Ax1& rotationAxis, gp_Pnt startPoint, gp_Pnt endPoint)
     {
-        // ‘⁄∏¸–¬πÏº£µƒ∫Ø ˝÷–£∫
+        // ????
         if (!m_trajectoryShape.IsNull()) {
-            ctx->Remove(m_trajectoryShape, Standard_False); // “∆≥˝æ…πÏº£
+            ctx->Remove(m_trajectoryShape, Standard_False); // ???
             m_trajectoryShape.Nullify();
         }
 
         //if (!m_label.IsNull()) {
-        //    ctx->Remove(m_label, Standard_False); // “∆≥˝æ…πÏº£µƒŒƒ◊÷
+        //    ctx->Remove(m_label, Standard_False); // ???
         //    m_label.Nullify();
         //}
 
@@ -454,21 +459,21 @@ namespace Mayo {
 
 
         if (!m_rolabel.IsNull()) {
-            ctx->Remove(m_rolabel, Standard_False); // “∆≥˝æ…πÏº£µƒŒƒ◊÷
+            ctx->Remove(m_rolabel, Standard_False); // ???
             m_rolabel.Nullify();
         }
 
         if (!arrowStart.IsNull()) {
-            ctx->Remove(arrowStart, Standard_False); // “∆≥˝ø™ º∑ΩœÚº˝Õ∑
+            ctx->Remove(arrowStart, Standard_False); // ???
             arrowStart.Nullify();
         }
 
         if (!arrowEnd.IsNull()) {
-            ctx->Remove(arrowEnd, Standard_False); // “∆≥˝Ω· ¯∑ΩœÚº˝Õ∑
+            ctx->Remove(arrowEnd, Standard_False); // ??
             arrowEnd.Nullify();
         }
 
-        // ¥¥Ω®÷±œﬂº∏∫Œ
+        // ??
         if (endPoint.IsEqual(startPoint, 1e-6)) {
             return;
         }
@@ -478,17 +483,17 @@ namespace Mayo {
         m_trajectoryShape = lineShape;
 
 
-        // ”≈œ» π”√°∞“—º«¬ºµƒ∆Ω“∆÷·°±£®Õœ◊ß ±ƒ„‘⁄Õ‚√Ê“—æ≠–¥π˝ m_distanceAxisIndex = tmpActiveAxisIndex;£©
+        // ???????? m_distanceAxisIndex = tmpActiveAxisIndex;
         int axisIndexForColor = m_distanceAxisIndex;
 
-        // ¥Œ—°£∫»Áπ˚ƒ„∆Ù”√¡Àæ¯∂‘ anchor ∂≥Ω·£¨“≤ø…“‘”√∂≥Ω·÷·
+        // ?? anchor ???
         if (axisIndexForColor < 0 || axisIndexForColor > 2) {
             if (m_hasTranslateAbsAnchor) {
                 axisIndexForColor = m_translateAbsAxisIndex;
             }
         }
 
-        // ∂µµ◊£∫◊Ó∫Û≤≈»•∂¡ ActiveAxisIndex£®◊¢“‚£∫ ‰»ÎøÚ≥°æ∞œ¬À¸æ≠≥£ « -1£©
+        // ?? ActiveAxisIndex???? -1
         if (axisIndexForColor < 0 || axisIndexForColor > 2) {
             axisIndexForColor = (!m_aManipulator.IsNull()) ? m_aManipulator->ActiveAxisIndex() : -1;
         }
@@ -498,144 +503,137 @@ namespace Mayo {
 
 
 
-        
+
 
         m_trajectoryShape->SetWidth(3);
 
-        // πÿº¸£∫∑≈µΩ Topmost Õº≤„ + Ã·…˝œ‘ æ”≈œ»º∂
+        // ?? Topmost ? + ??
         m_trajectoryShape->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(m_trajectoryShape, 10);
 
         ctx->Display(m_trajectoryShape, Standard_False);
-       
+
         const gp_Vec v(startPoint, endPoint);
         const gp_Vec axisVec(rotationAxis.Direction());
         Standard_Real signedDistance = v.Dot(axisVec);
 
-        // ±‹√‚ -0.000000 ÷Æ¿‡µƒœ‘ æ
+        //  -0.000000 ??
         if (std::abs(signedDistance) < 1e-9) {
             signedDistance = 0.0;
         }
 
-        // ∞¥πÃ∂®–° ˝Œª ‰≥ˆ£¨±‹√‚ std::to_string »ﬂ≥§
+        // ? std::to_string ?
         std::ostringstream oss;
         oss.setf(std::ios::fixed);
 
-  //      oss << std::setprecision(3) << signedDistance;
-  //      std::string distanceStr = oss.str();
+        //      oss << std::setprecision(3) << signedDistance;
+        //      std::string distanceStr = oss.str();
 
-  //      m_label = new AIS_TextLabel();
-  //      m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
-  //      m_label->SetColor(trajColor);
+        //      m_label = new AIS_TextLabel();
+        //      m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
+        //      m_label->SetColor(trajColor);
 
-  //      gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
+        //      gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
 
-  //      m_label->SetPosition(midPoint);
+        //      m_label->SetPosition(midPoint);
 
-		//// πÿº¸£∫‘⁄ Display ÷Æ«∞…Ë÷√ ZLayer£¨≤¢∑≈µΩ◊Ó∂•≤„
-  //      m_label->SetZLayer(Graphic3d_ZLayerId_Topmost);
+              //// ? Display ?? ZLayer??
+        //      m_label->SetZLayer(Graphic3d_ZLayerId_Topmost);
 
-  //      ctx->Display(m_label, Standard_False);
+        //      ctx->Display(m_label, Standard_False);
 
-        // =======================12.26 –¬‘ˆ=======================
-        // ª∫¥Êµ±«∞æ‡¿Î£®”√”⁄À´ª˜ ‰»ÎøÚ‘§ÃÓ£©
+        // =======================12.26 =======================
+        // ======= Simple dimension label (parallel dimension line next to trajectory) =======
+        // Keep a cache value (optional, can be used later for edit-box prefill)
         m_translateDimValueMm = signedDistance;
 
-        // ª∫¥Ê±Í◊¢Œª÷√£®”√”⁄ ‰»ÎøÚ∂®Œª£©
-        gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
-        m_translateDimTextPosWorld = midPoint;
-        m_hasTranslateDimTextPosWorld = true;
+        // Use a simple default plane (same as your reference snippet)
+        //gp_Pln pln;
+        //m_translateDim = new PrsDim_LengthDimension(edge, pln);
 
-        // º∆À„“ª∏ˆ∞¸∫¨ edge µƒ±Í◊¢∆Ω√Ê£®∑®œÚ±ÿ–Î ? edge ∑ΩœÚ£©
-        gp_Dir edgeDir(gp_Vec(startPoint, endPoint));
+        Handle(Prs3d_DimensionAspect) dimensionAspect = new Prs3d_DimensionAspect();
+        dimensionAspect->MakeArrows3d(true);   // ÂÖ≥ÈîÆÔºöÁ°Æ‰øùÁÆ≠Â§¥/Ê†áÊ≥®Á∫øÂèØËßÅ
+        dimensionAspect->MakeText3d(true);     // ÂÖ≥ÈîÆÔºöÁ°Æ‰øùÊñáÂ≠óÊåâ 3D ÊñπÂºèÊòæÁ§∫
+        dimensionAspect->TextAspect()->SetHeight(20);
+        dimensionAspect->MakeTextShaded(true);
+        dimensionAspect->SetCommonColor(trajColor);
+        dimensionAspect->MakeUnitsDisplayed(true);
+
+
+        // 1) edgeDirÔºöËΩ®ËøπÊñπÂêë
+        gp_Vec evec(startPoint, endPoint);
+        if (evec.Magnitude() < 1e-9) return;
+        gp_Dir edgeDir(evec);
+
+        // 2) viewDirÔºöÁõ∏Êú∫ËßÜÁ∫øÊñπÂêëÔºàÊ≤°ÊúâÁõ∏Êú∫Â∞±Áî® (0,0,1)Ôºâ
         gp_Dir viewDir(0, 0, 1);
         if (m_occView && m_occView->v3dView().get() && m_occView->v3dView().get()->Camera()) {
-            const auto cam = m_occView->v3dView().get()->Camera();
-            const gp_Vec vd(cam->Direction().X(), cam->Direction().Y(), cam->Direction().Z());
-            if (vd.Magnitude() > 1e-9) {
-                viewDir = gp_Dir(vd);
-            }
+            auto cam = m_occView->v3dView().get()->Camera();
+            gp_Vec vd(cam->Direction().X(), cam->Direction().Y(), cam->Direction().Z());
+            if (vd.Magnitude() > 1e-9) viewDir = gp_Dir(vd);
         }
 
-        // plane normal = edgeDir x viewDir£®±£÷§ normal ? edgeDir£¨«“æ°¡ø°∞√ÊœÚ ”Ω«°±£©
-        gp_Vec n = gp_Vec(edgeDir).Crossed(gp_Vec(viewDir));
-        if (n.Magnitude() < 1e-9) {
-            // camera ’˝∫√—ÿ◊≈÷·ø¥ ±£¨cross ø…ƒ‹ÕÀªØ£¨◊ˆ∂µµ◊
-            n = gp_Vec(edgeDir).Crossed(gp_Vec(0, 0, 1));
-            if (n.Magnitude() < 1e-9) {
-                n = gp_Vec(edgeDir).Crossed(gp_Vec(1, 0, 0));
-            }
+        // 3) offsetDirÔºöÂú®Â±èÂπïÂπ≥Èù¢ÂÜÖ„ÄÅ‰∏îÂûÇÁõ¥‰∫é edge ÁöÑÊñπÂêëÔºàÁî®‰∫éÊääÊ†áÊ≥®Á∫ø‚ÄúÊå™Âà∞ÊóÅËæπ‚ÄùÔºâ
+        gp_Vec off = gp_Vec(viewDir).Crossed(gp_Vec(edgeDir));
+        if (off.Magnitude() < 1e-9) {
+            off = gp_Vec(0, 0, 1).Crossed(gp_Vec(edgeDir));
+            if (off.Magnitude() < 1e-9) off = gp_Vec(0, 1, 0).Crossed(gp_Vec(edgeDir));
         }
-        gp_Pln dimPln(startPoint, gp_Dir(n));
+        gp_Dir offsetDir(off);
 
-        // ”√Õ¨“ªÃı edge ◊ˆ≥§∂»±Í◊¢£®edge ‘⁄«∞√Ê“—æ≠ MakeEdge ¡À£©
-        m_translateDim = new PrsDim_LengthDimension(edge, dimPln);
+        // 4) Áî® edgeDir + offsetDir ÊûÑÈÄ† plane ÁöÑÊ≥ïÂêëÔºà‰øùËØÅ plane Âê´ edge ‰∏îËÉΩÂÆö‰πâ flyout ÊñπÂêëÔºâ
+        gp_Vec n = gp_Vec(edgeDir).Crossed(gp_Vec(offsetDir));
+        if (n.Magnitude() < 1e-9) return;
+        gp_Dir normalDir(n);
 
-        // dimension Õ‚π€£®≤Œøºƒ„∏¯µƒ æ¿˝£©
-        Handle(Prs3d_DimensionAspect) dimAsp = new Prs3d_DimensionAspect();
-        dimAsp->MakeArrows3d(false);
-        dimAsp->MakeText3d(false);
-        dimAsp->MakeTextShaded(true);
-        dimAsp->MakeUnitsDisplayed(true);
-        dimAsp->TextAspect()->SetHeight(20);
-        dimAsp->SetCommonColor(trajColor);
+        // 5) planeÔºöÈÄöËøá midPointÔºåZ=normalÔºåX=edgeDirÔºàËøôÊ†∑ Y ‰ºöËá™Âä®Êàê‰∏∫‚ÄúÂÅèÁßªÊñπÂêë‚ÄùÔºâ
+        gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
+        gp_Ax3 ax3(midPoint, normalDir, edgeDir);
+        gp_Pln pln(ax3);
 
-        m_translateDim->SetDimensionAspect(dimAsp);
+        // 6) ÂàõÂª∫Áª¥Â∫¶Ê†áÊ≥® + Âº∫Âà∂ flyoutÔºàÁîüÊàêÂπ≥Ë°åÊ†áÊ≥®Á∫øÔºâ
+        m_translateDim = new PrsDim_LengthDimension(edge, pln);
+
+        Handle(Prs3d_DimensionAspect) asp = new Prs3d_DimensionAspect();
+        asp->MakeArrows3d(true);
+        asp->MakeText3d(true);
+        asp->MakeUnitsDisplayed(true);
+        asp->MakeTextShaded(true);
+        asp->TextAspect()->SetHeight(20);
+        asp->SetCommonColor(Quantity_NOC_RED); // ÂÖàÂõ∫ÂÆöÁ∫¢Ëâ≤ÔºåÁ°Æ‰øù‰Ω†ËÉΩÁúãËßÅ
+        m_translateDim->SetDimensionAspect(asp);
         m_translateDim->SetModelUnits("mm");
         m_translateDim->SetDisplayUnits("mm");
 
-        // ∑≈µΩ∂•≤„£¨”≈œ»º∂¬‘∏ﬂ”⁄œﬂ
+        // flyout ÁªôÂ§ß‰∏ÄÁÇπÔºåÁ°Æ‰øùÊòéÊòæÂàÜÁ¶ªÔºà‰Ω†Áé∞Âú®‚ÄúÁúã‰∏çÂà∞Á¨¨‰∫åÊù°Á∫ø‚ÄùÔºåÂ∞±ÂÖàÂÜôÊ≠ªÔºâ
+        m_translateDim->SetFlyout(80.0);
+
         m_translateDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        ctx->SetDisplayPriority(m_translateDim, 12);
-
-        ctx->Display(m_translateDim, Standard_False);
-
-        // ==============================================
+        ctx->Display(m_translateDim, Standard_True);
+        ctx->UpdateCurrentViewer();
 
 
 
+        //m_translateDim->SetModelUnits("mm");
+        //m_translateDim->SetDisplayUnits("mm");
+        //m_translateDim->SetDimensionAspect(dimensionAspect);
 
-        // À„∑ΩœÚœÚ¡ø
-        gp_Vec vec(startPoint, endPoint);
-        if (vec.Magnitude() < 1e-6) return; // Ã´∂Ã‘Ú≤ªœ‘ æº˝Õ∑
-        gp_Dir dir(vec);
-        gp_Dir revDir = dir.Reversed();
+        //// Force a visible offset from the trajectory line (creates the parallel dimension line)
+        //const Standard_Real edgeLen = startPoint.Distance(endPoint);
+        //const Standard_Real flyout = std::max<Standard_Real>(20.0, std::min<Standard_Real>(edgeLen * 0.20, 120.0));
+        ////m_translateDim->SetFlyout(80.0);
 
-        // º˝Õ∑≤Œ ˝
-        Standard_Real arrowLength = 24.0;
-        Standard_Real arrowRadius = 8.0;
+        //m_translateDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        //ctx->SetDisplayPriority(m_translateDim, 12);
+        //ctx->Display(m_translateDim, Standard_True); // ÂÖ≥ÈîÆÔºöÁ´ãÂç≥ËÆ°ÁÆóÂπ∂ÊòæÁ§∫
+        //ctx->UpdateCurrentViewer();                  // ÂÖ≥ÈîÆÔºöÂº∫Âà∂Âà∑Êñ∞
 
-        // ÷’µ„º˝Õ∑
-        gp_Pnt arrowEndPoint = endPoint.Translated(gp_Vec(revDir) * (arrowLength - 20));
-        gp_Ax2 endAx2(arrowEndPoint, dir); // ¥”÷’µ„≥ØœÚÕ‚
-        TopoDS_Shape coneEnd = BRepPrimAPI_MakeCone(endAx2, arrowRadius, 0.0, arrowLength);
 
-        arrowEnd = new AIS_Shape(coneEnd);
-        arrowEnd->SetDisplayMode(AIS_Shaded);
-        arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowEnd->SetColor(trajColor);
+        // NOTE: translation dimension is drawn by PrsDim_LengthDimension (dimension line + arrows + text)
 
-        // Topmost + ∏¸∏ﬂ priority£®±£÷§∏«◊°πÏº£œﬂ£©
-        arrowEnd->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        ctx->SetDisplayPriority(arrowEnd, 11);
 
-        ctx->Display(arrowEnd, false);
+                // ==============================================
 
-        // ∆µ„º˝Õ∑
-        gp_Pnt arrowStartPoint = startPoint.Translated(gp_Vec(dir) * (arrowLength - 20));
-        gp_Ax2 startAx2(arrowStartPoint, revDir); // ¥”∆µ„≥ØœÚÕ‚
-        TopoDS_Shape coneStart = BRepPrimAPI_MakeCone(startAx2, arrowRadius, 0.0, arrowLength);
-
-        arrowStart = new AIS_Shape(coneStart);
-        arrowStart->SetDisplayMode(AIS_Shaded);
-        arrowStart->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowStart->SetColor(trajColor);
-
-        // Topmost + ∏¸∏ﬂ priority£®±£÷§∏«◊°πÏº£œﬂ£©
-        arrowStart->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        ctx->SetDisplayPriority(arrowStart, 11);
-
-        ctx->Display(arrowStart, false);
     }
 
     void WidgetOccViewController::redrawView()
@@ -725,10 +723,10 @@ namespace Mayo {
             return;
 
         QEvent* passEvent = const_cast<QEvent*>(static_cast<const QEvent*>(event));
-        // »Áπ˚ m_editLine ”–Ωπµ„£¨Ω´ ¬º˛◊™∑¢∏¯À¸
+        //  m_editLine ???
         if (m_editLine && m_editLine->hasFocus()) {
-            QApplication::sendEvent(m_editLine, passEvent);  // Ω´ ¬º˛∑¢ÀÕ∏¯ m_editLine
-            return;  // ◊Ë÷π ¬º˛ºÃ–¯¥´≤•
+            QApplication::sendEvent(m_editLine, passEvent);  // ?? m_editLine
+            return;  // ??
         }
 
         m_inputSequence.push(event->key());
@@ -745,10 +743,10 @@ namespace Mayo {
             return;
 
         QEvent* passEvent = const_cast<QEvent*>(static_cast<const QEvent*>(event));
-        // »Áπ˚ m_editLine ”–Ωπµ„£¨Ω´ ¬º˛◊™∑¢∏¯À¸
+        //  m_editLine ???
         if (m_editLine && m_editLine->hasFocus()) {
-            QApplication::sendEvent(m_editLine, passEvent);  // Ω´ ¬º˛∑¢ÀÕ∏¯ m_editLine
-            return;  // ◊Ë÷π ¬º˛ºÃ–¯¥´≤•
+            QApplication::sendEvent(m_editLine, passEvent);  // ?? m_editLine
+            return;  // ??
         }
 
         m_inputSequence.release(event->key());
@@ -764,7 +762,7 @@ namespace Mayo {
 
     void WidgetOccViewController::handleMouseButtonPress(const QMouseEvent* event)
     {
-                
+
         m_inputSequence.push(event->button());
 
         const QPoint currPos = m_occView->widget()->mapFromGlobal(event->globalPos());
@@ -786,84 +784,84 @@ namespace Mayo {
 
                     if (0 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // Ω˚”√¡À Y ÷·µƒ∆Ω“∆
-                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // Ω˚”√¡À Z ÷·µƒ∆Ω“∆
+                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Y ?
+                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Z ?
                         currentOperation = 1;
                     }
                     else if (1 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // Ω˚”√¡À X ÷·µƒ∆Ω“∆
-                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // Ω˚”√¡À Z ÷·µƒ∆Ω“∆
+                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  X ?
+                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Z ?
                         currentOperation = 2;
                     }
                     else if (2 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // Ω˚”√¡À X ÷·µƒ∆Ω“∆
-                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // Ω˚”√¡À Y ÷·µƒ∆Ω“∆
+                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  X ?
+                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Y ?
                         currentOperation = 3;
                     }
 
-                    m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // Ω˚”√¡À X ÷·µƒ–˝◊™
-                    m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // Ω˚”√¡À Y ÷·µƒ–˝◊™
-                    m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // Ω˚”√¡À Z ÷·µƒ–˝◊™
+                    m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  X ?
+                    m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Y ?
+                    m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Z ?
                 }
                 else if (AIS_MM_Rotation == tmpActiveAxisMode)
                 {
                     if (0 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // Ω˚”√¡À Y ÷·µƒ–˝◊™
-                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // Ω˚”√¡À Z ÷·µƒ–˝◊™
+                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Y ?
+                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Z ?
                         currentOperation = 4;
                         m_axis = gp_XYZ(1, 0, 0);
                         //m_aManipulator->SetPosition(gp_Ax2(m_aManipulator->Position().Location(), m_aManipulator->Position().XDirection()));
                     }
                     else if (1 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // Ω˚”√¡À X ÷·µƒ–˝◊™
-                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // Ω˚”√¡À Z ÷·µƒ–˝◊™
+                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  X ?
+                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Z ?
                         currentOperation = 5;
                         m_axis = gp_XYZ(0, 1, 0);
                         //m_aManipulator->SetPosition(gp_Ax2(m_aManipulator->Position().Location(), m_aManipulator->Position().YDirection()));
                     }
                     else if (2 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // Ω˚”√¡À X ÷·µƒ–˝◊™
-                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // Ω˚”√¡À Y ÷·µƒ–˝◊™
+                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  X ?
+                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Y ?
                         currentOperation = 6;
                         m_axis = gp_XYZ(0, 0, 1);
                         //m_aManipulator->SetPosition(gp_Ax2(m_aManipulator->Position().Location(), m_aManipulator->Position().XDirection().Crossed(m_aManipulator->Position().YDirection())));
                     }
 
-                    m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // Ω˚”√¡À X ÷·µƒ–˝◊™
-                    m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // Ω˚”√¡À Y ÷·µƒ–˝◊™
-                    m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // Ω˚”√¡À Z ÷·µƒ–˝◊™
+                    m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  X ?
+                    m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Y ?
+                    m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Z ?
                 }
 
 
-                // ===== ∆Ω“∆∏®÷˙œﬂ£∫÷ª‘⁄°∞’Ê’˝µ„µΩƒ≥Ãı∆Ω“∆÷·(0/1/2)°± ±£¨∏¸–¬ª·ª∞∆µ„/÷· =====
+                // ===== ????????(0/1/2)???/ =====
                 if (!m_aManipulator.IsNull()
                     && AIS_MM_Translation == tmpActiveAxisMode
                     && tmpActiveAxisIndex >= 0 && tmpActiveAxisIndex <= 2
-                    && m_aManipulator->HasActiveMode())   // πÿº¸£∫»∑±£ Û±Í»∑ µµ„‘⁄ manipulator µƒ”––ß≤øº˛…œ
+                    && m_aManipulator->HasActiveMode())   // ???? manipulator 
                 {
                     const gp_Ax2 ax2 = m_aManipulator->Position();
 
-                    // 1) ±æ¥ŒÕœ∂Ø∆µ„£®”√”⁄ displacement º∆À„£©±ÿ–Î∏¸–¬≥…°∞µ±«∞µ„°±
-                    //    ∑Ò‘Ú«–÷·∫Û»‘ª·—ÿ”√æ…µƒ m_initialPosition
+                    // 1) ?? displacement ????
+                    //    ??? m_initialPosition
                     m_initialPosition = ax2.Location();
 
-                    // 2) À¯∂®µ±«∞÷·∑ΩœÚ£®”√”⁄ª≠œﬂ£©
+                    // 2) ????
                     gp_Dir axisDir =
                         (tmpActiveAxisIndex == 0) ? ax2.XDirection() :
                         (tmpActiveAxisIndex == 1) ? ax2.YDirection() :
                         ax2.Direction();
 
-                    // 3) ∏®÷˙œﬂª·ª∞£∫
-                    //    - µ⁄“ª¥ŒΩ¯»Î£∫anchor=µ±«∞µ„
-                    //    - Õ¨“ª÷·£∫anchor ≤ª±‰£®±£≥÷ 0°˙b µƒ”Ô“Â£©
-                    //    - ªª÷·£∫anchor ÷ÿ÷√Œ™µ±«∞µ„
+                    // 3) ??
+                    //    - ??anchor=?
+                    //    - ???anchor ? 0b 
+                    //    - ?anchor ??
                     if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
-                        m_translateAbsAnchorWorld = ax2.Location();   // ªª÷·∫Û–¬µƒ∆µ„”¶Œ™µ±«∞µ„
+                        m_translateAbsAnchorWorld = ax2.Location();   // ????
                         m_translateAbsAxisWorld = axisDir;
                         m_translateAbsAxisIndex = tmpActiveAxisIndex;
                         m_hasTranslateAbsAnchor = true;
@@ -884,7 +882,7 @@ namespace Mayo {
                 {
                     if (currentOperation == m_lastOperation)
                     {
-                        //≤ª–Ë“™∏¸–¬
+                        //?
                     }
                     else
                     {
@@ -913,7 +911,7 @@ namespace Mayo {
                         m_aManipulator->SetPosition(tmpAx21);
                     }
 
-                    m_aManipulator->StartTransform(currPos.x(), currPos.y(), m_occView->v3dView());	// ≥ı ºªØ◊™ªª£¨º«¬º∆ ºŒª÷√
+                    m_aManipulator->StartTransform(currPos.x(), currPos.y(), m_occView->v3dView());	// ????
                 }
             }
         }
@@ -946,7 +944,7 @@ namespace Mayo {
                     {
                         if (m_aManipulator->HasActiveMode())
                         {
-                            m_aManipulator->Transform(currPos.x, currPos.y, m_occView->v3dView()); // ”¶”√ Û±Í¥”∆ ºŒª÷√ø™ º“∆∂Ø∂¯≤˙…˙µƒ±‰ªª
+                            m_aManipulator->Transform(currPos.x, currPos.y, m_occView->v3dView()); // ??????
 
 
                             static auto lastTime = std::chrono::high_resolution_clock::now();
@@ -966,7 +964,7 @@ namespace Mayo {
                                 if (m_aManipulator->HasTransformation())
                                 {
                                     gp_Pnt currentPosition = m_aManipulator->Position().Location();
-                                    // ªÒ»°∆Ω“∆÷µ
+                                    // ???
                                     gp_Vec displacement(m_initialPosition, currentPosition);
                                     std::cout << "Translation: ("
                                         << displacement.X() << ", "
@@ -977,11 +975,11 @@ namespace Mayo {
                                     m_posTransform.SetY(displacement.Y() * 1000);
                                     m_posTransform.SetZ(displacement.Z() * 1000);
 
-                                    // –¬‘ˆ£∫∆Ω“∆ƒ£ Ωœ¬£∫∏¯ ShowTransformTrajectory ¥´»Î°∞µ±«∞º§ªÓ÷·°±µƒ∑ΩœÚ
-                                    // »°≤Ÿ◊›∆˜µ±«∞◊¯±Íœµ£® ¿ΩÁ◊¯±Íœ¬£©
+                                    // ???? ShowTransformTrajectory ????
+                                    // ????
                                     const gp_Ax2 manipAx2 = m_aManipulator->Position();
 
-                                    // ∏˘æ› ActiveAxisIndex »°∂‘”¶∑ΩœÚ£® ¿ΩÁ◊¯±Íœ¬µƒµ•Œª∑ΩœÚ£©
+                                    //  ActiveAxisIndex ????
                                     gp_Dir axisDir;
                                     if (tmpActiveAxisIndex == 0) {
                                         axisDir = manipAx2.XDirection();       // X
@@ -990,19 +988,19 @@ namespace Mayo {
                                         axisDir = manipAx2.YDirection();       // Y
                                     }
                                     else { // tmpActiveAxisIndex == 2
-                                        axisDir = manipAx2.Direction();        // Z£®gp_Ax2::Direction()  «÷˜∑ΩœÚ£©
+                                        axisDir = manipAx2.Direction();        // Zgp_Ax2::Direction() 
                                     }
 
-                                    // ===== –¬‘ˆ£∫÷ª‘⁄°∞’Ê µÕœ∂Ø£®∞¥◊≈◊Ûº¸“∆∂Ø£©°± ±À¯∂®∏®÷˙œﬂµƒ÷·”Î anchor =====
+                                    // ===== ??????? anchor =====
                                     if ((event->buttons() & Qt::LeftButton) != 0
                                         && AIS_MM_Translation == tmpActiveAxisMode
                                         && tmpActiveAxisIndex >= 0 && tmpActiveAxisIndex <= 2)
                                     {
-                                        // »Áπ˚ «µ⁄“ª¥ŒÀ¯∂®£¨ªÚ÷·∑¢…˙¡À±‰ªØ£®”√ªßø™ ºÕœ¡Ì“ª∏˘÷·£©£¨æÕ∏¸–¬À¯∂®–≈œ¢
+                                        // ??????????
                                         if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
-                                            // πÿº¸£∫anchor ±ÿ–Î «°∞∏√÷·’‚¥ŒÕœ∂Øµƒ∆µ„°±
-                                            // ƒ„‘⁄ press ¿Ô“—æ≠ª·∏¸–¬ m_initialPosition£®«–ªª≤Ÿ◊˜/÷· ±£©
-                                            // À˘“‘’‚¿Ô÷±Ω””√ m_initialPosition ◊˜Œ™’‚¥ŒÕœ∂Øµƒ∆µ„◊ÓŒ»
+                                            // ?anchor ???
+                                            //  press ? m_initialPosition/?
+                                            // ? m_initialPosition ??
                                             m_translateAbsAnchorWorld = m_initialPosition;
 
                                             m_translateAbsAxisWorld = axisDir;
@@ -1013,10 +1011,10 @@ namespace Mayo {
                                     // =========================================================================
 
 
-                                    // º«¬ºµ±«∞ distance label
+                                    // ?? distance label
                                     m_distanceAxisIndex = tmpActiveAxisIndex;
 
-                                    // ∆µ„/÷·£∫”≈œ»”√°∞æ¯∂‘ anchor£®0£©°±
+                                    // /? anchor0
                                     gp_Pnt startPoint = m_hasTranslateAbsAnchor ? m_translateAbsAnchorWorld : m_initialPosition;
                                     gp_Dir drawAxisDir = m_hasTranslateAbsAnchor ? m_translateAbsAxisWorld : axisDir;
 
@@ -1033,7 +1031,7 @@ namespace Mayo {
 
 
                                 gp_Quaternion deltaRotation = currentRotation.GetRotation() * m_initialRotation.GetRotation().Inverted();
-                                //if (deltaRotation.W() < 0) deltaRotation = -deltaRotation; // Õ≥“ªŒ™ w > 0 µƒ±Ì æ
+                                //if (deltaRotation.W() < 0) deltaRotation = -deltaRotation; // ??? w > 0 ??
                                 static Standard_Real lastAngle = 0.0;
                                 gp_Vec axis;
                                 Standard_Real angle;
@@ -1044,34 +1042,34 @@ namespace Mayo {
                                 qInfo() << "deltaRotation.W(): " << deltaRotation.W();
 
 
-                                // 1. ªÒ»°æ÷≤ø◊¯±Íœµ∫Õ–˝◊™÷·
+                                // 1. ????
                                 gp_Ax2 localAxes = m_aManipulator->Position();
                                 gp_Dir rotationAxis;
                                 gp_Dir initialDir;
                                 if (tmpActiveAxisIndex == 0)
                                 {
-                                    rotationAxis = localAxes.XDirection(); // µ±«∞–˝◊™÷·
-                                    initialDir = localAxes.YDirection();  // ≥ı º≤Œøº∑ΩœÚ
+                                    rotationAxis = localAxes.XDirection(); // ??
+                                    initialDir = localAxes.YDirection();  // ?
                                 }
                                 else if (tmpActiveAxisIndex == 1)
                                 {
-                                    rotationAxis = localAxes.YDirection(); // µ±«∞–˝◊™÷·
-                                    initialDir = localAxes.Direction();  // ≥ı º≤Œøº∑ΩœÚ
+                                    rotationAxis = localAxes.YDirection(); // ??
+                                    initialDir = localAxes.Direction();  // ?
                                 }
                                 else if (tmpActiveAxisIndex == 2)
                                 {
-                                    rotationAxis = localAxes.Direction(); // µ±«∞–˝◊™÷·
-                                    initialDir = localAxes.XDirection();  // ≥ı º≤Œøº∑ΩœÚ
+                                    rotationAxis = localAxes.Direction(); // ??
+                                    initialDir = localAxes.XDirection();  // ?
                                 }
 
                                 m_posTransform.SetX(axis.X());
                                 m_posTransform.SetY(axis.Y());
                                 m_posTransform.SetZ(angle * 180.0 / M_PI);
 
-                                // 1) µ±«∞≤Ÿ◊›∆˜—°÷–µƒ–˝◊™÷·
+                                // 1) ???
                                 gp_Vec axisRotation;
-                                
-                                // 2) deltaRotation ÷·Ω«∑÷Ω‚µ√µΩµƒ axis/angle
+
+                                // 2) deltaRotation ??? axis/angle
                                 gp_Vec deltaAxis = axis;
                                 if (deltaAxis.Magnitude() > 1e-12) {
                                     deltaAxis.Normalize();
@@ -1080,7 +1078,7 @@ namespace Mayo {
 
 
 
-                                // º∆À„ intended axisRotation£∫
+                                //  intended axisRotation
 
                                 const gp_Ax2 ax2 = m_aManipulator->Position();
 
@@ -1090,7 +1088,7 @@ namespace Mayo {
 
                                 axisRotation.Normalize();
 
-                                // º∆À„ deltaRotation ÷·Ω«£®Ω®“È∞— w Õ≥“ªµΩ’˝£¨±‹√‚÷·∑≠◊™µº÷¬∑˚∫≈∂∂∂Ø£©
+                                //  deltaRotation ? w ?????
 
                                 if (deltaRotation.W() < 0.0) deltaRotation = -deltaRotation;
 
@@ -1098,22 +1096,22 @@ namespace Mayo {
                                 Standard_Real qAngle = 0.0;
                                 deltaRotation.GetVectorAndAngle(qAxis, qAngle);
 
-                                // ”√°∞qAxis ”Î axisRotation µƒµ„ª˝°±»∑∂®∑˚∫≈£®±»”√Œª“∆/∆‰À¸‘Î…˘‘¥Œ»∂®£©
+                                // qAxis  axisRotation ???/??
                                 double signedAngle = (qAxis.Dot(axisRotation) < 0.0) ? -qAngle : qAngle;
 
-                                // ===== ∂≥Ω·–˝◊™÷·/÷––ƒ£®pivot£©=====
+                                // ===== ?/?pivot=====
                                 if (!m_hasRotateAbsAnchor || m_rotateAbsAxisIndex != tmpActiveAxisIndex) {
                                     m_rotateAbsAnchorWorld = m_aManipulator->Position().Location();
                                     m_rotateAbsAxisWorld = gp_Dir(axisRotation);
                                     m_rotateAbsAxisIndex = tmpActiveAxisIndex;
                                     m_hasRotateAbsAnchor = true;
-                                    m_rotateAbsAngleRad = 0.0; // –¬÷· ◊¥ŒΩ¯»Î£¨ø…∞¥–Ë«Â¡„
+                                    m_rotateAbsAngleRad = 0.0; // ???
                                 }
 
-                                // Õ¨≤Ωµ±«∞¿€º∆Ω«£¨π© ‰»ÎøÚ π”√
+                                // ??????
                                 m_rotateAbsAngleRad = signedAngle;
 
-                                // πÏº£ªÊ÷∆“≤Õ≥“ª”√ frozen ÷·£®±‹√‚œ‘ æ÷·∆Ø£©
+                                // ???? frozen ???
                                 const gp_Ax1 drawAxis(m_rotateAbsAnchorWorld, m_rotateAbsAxisWorld);
                                 ShowRotationTrajectory(m_context, drawAxis, 0.0, signedAngle);
 
@@ -1152,7 +1150,7 @@ namespace Mayo {
             case Qt::MiddleButton: return Aspect_VKeyMouse_MiddleButton;
             default: return Aspect_VKeyMouse_UNKNOWN;
             }
-            };        
+            };
 
         m_inputSequence.release(event->button());
         const bool hadDynamicAction = this->hasCurrentDynamicAction();
@@ -1171,24 +1169,24 @@ namespace Mayo {
                 const Handle(AIS_InteractiveObject)& selected = m_context->SelectedInteractive();
 
 
-                // ¥¶¿Ìæ‡¿ÎŒƒ±æ£®∆Ω“∆£© ‰»ÎøÚ
+                // ???
                 if (selected == m_translateDim) {
-                    
+
                     //QString currentText = QString::fromUtf16(m_label->Text().ToExtString());
-                    
-                    // ÷±Ω””√ª∫¥Êµƒæ‡¿Î÷µ£®≤ª‘Ÿ¥” label Œƒ±æ≤£©
+
+                    // ????? label ?
                     const double oldDistanceMm = m_translateDimValueMm;
                     const QString numberPart = QString::number(oldDistanceMm, 'f', 3);
 
-                    QWidget* parentWidget = m_occView->widget()->parentWidget();  // Õ®≥£ « WidgetGuiDocument
+                    QWidget* parentWidget = m_occView->widget()->parentWidget();  // ? WidgetGuiDocument
 
                     if (!m_editLine) {
                         m_editLine = new QLineEdit(parentWidget);
-                        
+
 
                         m_editLine->setStyleSheet("background: white; color: black; border: 1px solid red;");
                         m_editLine->setAlignment(Qt::AlignCenter);
-                        // ‘ –Ì’˝∏∫∏°µ„ ˝£∫-1, 0, 12.3, 4.56 µ»
+                        // -1, 0, 12.3, 4.56 
                         m_editLine->setValidator(new QRegularExpressionValidator(
                             QRegularExpression("^-?(0|([1-9][0-9]*))(\\.[0-9]+)?$"),
                             m_editLine
@@ -1197,12 +1195,12 @@ namespace Mayo {
                         m_editLine->setFrame(true);
                         m_editLine->hide();
 
-                        //// ---------- 1. ¥” label ÷–»°≥ˆ°∞æ…æ‡¿Î a°± ----------
-                        //// currentText ∏Ò Ω¿‡À∆ "12.345 mm"
+                        //// ---------- 1.  label ?? a ----------
+                        //// currentText ? "12.345 mm"
                         //QStringList qlist = currentText.split(' ', Qt::SkipEmptyParts);
                         //QString numberPart = currentText;
                         //if (!qlist.isEmpty()) {
-                        //    // µ⁄“ª∏ˆ token µ±◊˜ ˝÷µ≤ø∑÷
+                        //    // ? token ?
                         //    numberPart = qlist[0];
                         //}
 
@@ -1212,14 +1210,14 @@ namespace Mayo {
                         //    oldDistanceMm = 0.0;
                         //}
 
-                        ////  ‰»ÎøÚœ‘ æµ±«∞µƒ◊‹Œª“∆ a
+                        //// ?? a
                         m_editLine->setText(numberPart);
 
 
-                        // ---------- 2. ∞— m_label µƒ 3D Œª÷√Õ∂”∞µΩ∆¡ƒª◊¯±Í ----------
+                        // ---------- 2.  m_label  3D ??? ----------
                         Standard_Integer vx = 0, vy = 0;
 
-                        // m_label µƒ 3D Œª÷√
+                        // m_label  3D 
                         /*const gp_Pnt labelPnt = m_label->Position();*/
 
                         gp_Pnt labelPnt = m_aManipulator->Position().Location();
@@ -1228,22 +1226,22 @@ namespace Mayo {
                         }
 
 
-                        // OCCT Õ∂”∞£∫ ¿ΩÁ◊¯±Í ->  ”ø⁄œÒÀÿ◊¯±Í
+                        // OCCT ?? -> ?
                         m_occView->v3dView()->Convert(labelPnt.X(), labelPnt.Y(), labelPnt.Z(), vx, vy);
 
-                        // Convert ∏¯µƒ « OCC  ”Õº◊¯±Í£®Õ®≥£‘≠µ„‘⁄◊Û…œ/◊Ûœ¬»°æˆ”⁄ µœ÷£©
-                        // Mayo/OCCT ¿Ô“ª∞„ø…“‘÷±Ω”µ±◊˜ Qt widget µƒæ÷≤ø◊¯±Í π”√£ª
-                        // »Ùƒ„∑¢œ÷ Y ∑ΩœÚ…œœ¬µﬂµπ£¨‘Ÿ◊ˆ“ª¥Œ vy = viewHeight - vy°£
+                        // Convert  OCC ????/???
+                        // Mayo/OCCT ??? Qt widget ????
+                        // ? Y ??? vy = viewHeight - vy
 
                         QWidget* viewWidget = m_occView->widget();
                         QWidget* parentWidget = viewWidget->parentWidget();
 
-                        //  ”Õºæ÷≤ø◊¯±Í -> »´æ÷ -> parentWidget æ÷≤ø
+                        // ?? -> ? -> parentWidget ?
                         QPoint viewLocalPos(vx, vy);
                         QPoint globalPos = viewWidget->mapToGlobal(viewLocalPos);
                         QPoint localPos = parentWidget->mapFromGlobal(globalPos);
 
-                        // »√ ‰»ÎøÚæ”÷–Ã˘Ω¸Œƒ◊÷£®Œ¢µ˜∆´“∆ø…∞¥–Ë“™∏ƒ£©
+                        // ???????
                         localPos -= QPoint(m_editLine->width() / 2, m_editLine->height() / 2);
                         localPos += QPoint(0, -10);
 
@@ -1255,8 +1253,8 @@ namespace Mayo {
                         m_editLine->setFocusPolicy(Qt::StrongFocus);
                         m_editLine->setFocus();
 
-                        
-                        // ∂≥Ω·±æ¥Œ÷·”Î anchor£®‘⁄ connect ÷Æ«∞£©
+
+                        // ? anchor connect ??
                         if (m_aManipulator.IsNull()) {
                             delete m_editLine;
                             m_editLine = nullptr;
@@ -1266,7 +1264,7 @@ namespace Mayo {
                         const gp_Ax2 curAx2AtPopup = m_aManipulator->Position();
                         const gp_Pnt curLocAtPopup = curAx2AtPopup.Location();
 
-                        // ∂≥Ω·÷·À˜“˝£∫”≈œ»”√ m_distanceAxisIndex£¨∑Ò‘Ú”√ ActiveAxisIndex
+                        //  m_distanceAxisIndex ActiveAxisIndex
                         int axisIndexFrozen = m_distanceAxisIndex;
                         if (axisIndexFrozen < 0 || axisIndexFrozen > 2) {
                             axisIndexFrozen = m_aManipulator->ActiveAxisIndex();
@@ -1277,23 +1275,23 @@ namespace Mayo {
                             return;
                         }
 
-                        // ∂≥Ω·÷·∑ΩœÚ
+                        // ?
                         gp_Dir axisDirFrozen =
                             (axisIndexFrozen == 0) ? curAx2AtPopup.XDirection() :
                             (axisIndexFrozen == 1) ? curAx2AtPopup.YDirection() :
                             curAx2AtPopup.Direction(); // Z
 
-                        // ”√°∞µ±«∞Œª÷√ + æ…æ¯∂‘æ‡¿Î a°±∑¥Õ∆æ¯∂‘∆µ„ anchor£∫anchor = currentLoc - axisDir * a
+                        // ? + ?? a? anchoranchor = currentLoc - axisDir * a
                         gp_Pnt anchorFrozen = curLocAtPopup.Translated(gp_Vec(axisDirFrozen) * (-oldDistanceMm));
-                      
-                        
-                        
-                        // ---------- 3. editingFinished£∫∞—°∞æ¯∂‘æ‡¿Î b°±◊™≥…‘ˆ¡ø (b - a) ----------
+
+
+
+                        // ---------- 3. editingFinished?? b? (b - a) ----------
                         connect(
                             m_editLine,
                             &QLineEdit::editingFinished,
                             this,
-                            [this, oldDistanceMm, axisIndexFrozen, axisDirFrozen, anchorFrozen]() 
+                            [this, oldDistanceMm, axisIndexFrozen, axisDirFrozen, anchorFrozen]()
                             {
                                 const QString distanceText = m_editLine->text().trimmed();
                                 if (distanceText.isEmpty() || m_label.IsNull()) {
@@ -1303,7 +1301,7 @@ namespace Mayo {
                                 }
 
                                 bool ok = false;
-                                const double newDistanceMm = distanceText.toDouble(&ok);  // ”√ªß ‰»Îµƒ–¬÷µ b
+                                const double newDistanceMm = distanceText.toDouble(&ok);  // ?? b
                                 if (!ok) {
                                     delete m_editLine;
                                     m_editLine = nullptr;
@@ -1316,10 +1314,10 @@ namespace Mayo {
                                     return;
                                 }
 
-                                // µ±«∞ manipulator µƒ◊¯±Íœµ£®µ±«∞÷·œÚ£©
+                                // ? manipulator ??
                                 gp_Ax2 curAx2 = m_aManipulator->Position();
 
-                                // ÷·À˜“˝£∫0/1/2 => X/Y/Z
+                                // 0/1/2 => X/Y/Z
                                 int axisIndex = m_distanceAxisIndex;
                                 if (axisIndex < 0 || axisIndex > 2) {
                                     axisIndex = m_aManipulator->ActiveAxisIndex();
@@ -1338,11 +1336,11 @@ namespace Mayo {
                                 else
                                     axisDir = curAx2.Direction();  // Z
 
-                                // æ…÷µ a°¢–¬÷µ b£®µ•Œª£∫mm£©
+                                // ? a? bmm
                                 const Standard_Real oldModel = oldDistanceMm;
                                 const Standard_Real newModel = newDistanceMm;
 
-                                // ‘ˆ¡ø£∫¶§ = b - a
+                                //  = b - a
                                 const Standard_Real deltaModel = newModel - oldModel;
                                 if (Abs(deltaModel) < 1e-12) {
                                     delete m_editLine;
@@ -1350,11 +1348,11 @@ namespace Mayo {
                                     return;
                                 }
 
-                                // ÷·œÚ‘ˆ¡øœÚ¡ø£® ¿ΩÁ◊¯±Í£©
+                                // ?
                                 gp_Vec deltaVec(axisDirFrozen);
                                 deltaVec *= deltaModel;
 
-                                // ∏¸–¬ label£∫œ‘ æ–¬µƒ◊‹Œª“∆ b
+                                //  label?? b
                                 {
                                     //QString text = QString("%1 mm").arg(newDistanceMm, 0, 'f', 3);
                                     //m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
@@ -1364,16 +1362,16 @@ namespace Mayo {
 
                                 }
 
-                                // 1) œ»»√Õœ∂Ø∆˜“≤◊ﬂÕ¨“ª∏ˆ‘ˆ¡ø ¶§£®≤ª“™°∞≈ƒ°±µΩ startPoint+b£©
+                                // 1) ???? ?? startPoint+b
                                 curAx2 = m_aManipulator->Position();
                                 gp_Pnt curLoc = curAx2.Location();
                                 gp_Pnt newLoc = curLoc.Translated(deltaVec);
 
-                                // ±£≥÷µ±«∞≥ØœÚ≤ª±‰£¨÷ª∏¸–¬ location
+                                // ?????? location
                                 gp_Ax2 newAx2(newLoc, curAx2.Direction(), curAx2.XDirection());
                                 m_aManipulator->SetPosition(newAx2);
 
-                                // 2) ∂‘ŒÔÃÂ”¶”√Õ¨“ª∏ˆ‘ˆ¡ø ¶§
+                                // 2) ??? 
                                 gp_Trsf transformation;
                                 transformation.SetTranslation(deltaVec);
 
@@ -1397,14 +1395,14 @@ namespace Mayo {
                                     }
                                 }
 
-                                // 3) πÏº£œﬂ£∫±ÿ–Î¥”°∞æ¯∂‘∆µ„ 0°±ª≠µΩ °∞0 + b°±
+                                // 3) ??? 0 0 + b
                                 gp_Pnt startPoint = anchorFrozen;
                                 gp_Dir drawAxisDir = axisDirFrozen;
 
 
                                 gp_Pnt absEndPoint = startPoint.Translated(gp_Vec(drawAxisDir) * newModel);
 
-                                // œ»Õ¨≤Ωª∫¥Ê£∫ ‰»ÎøÚ¬∑æ∂”ÎÕœ∂Ø¬∑æ∂Õ≥“ª°∞æ¯∂‘∆µ„/÷·°±
+                                // ?◊°???/?
                                 m_translateAbsAnchorWorld = anchorFrozen;
                                 m_translateAbsAxisWorld = axisDirFrozen;
                                 m_translateAbsAxisIndex = axisIndexFrozen;
@@ -1419,7 +1417,7 @@ namespace Mayo {
                                 redrawView();
 
 
-                                //  ’Œ≤
+                                // 
                                 delete m_editLine;
                                 m_editLine = nullptr;
 
@@ -1438,9 +1436,9 @@ namespace Mayo {
                     QWidget* parentWidget = m_occView->widget()->parentWidget();  // WidgetGuiDocument
 
                     if (!m_editLine) {
-                        m_editLine = new QLineEdit(parentWidget); // ∏≤∏«‘⁄ viewer …œ
-                        
-                        //m_editLine = new QLineEdit(nullptr);  // √ª”–∏∏øÿº˛£¨œµÕ≥∏°∂Ø¥∞ø⁄
+                        m_editLine = new QLineEdit(parentWidget); //  viewer 
+
+                        //m_editLine = new QLineEdit(nullptr);  // ????
                         //m_editLine->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
                         m_editLine->setStyleSheet("background: white; color: black; border: 1px solid red;");
                         m_editLine->setAlignment(Qt::AlignCenter);
@@ -1452,19 +1450,19 @@ namespace Mayo {
                         m_editLine->hide();
 
 
-                        // …Ë÷√Œƒ±æøÚŒª÷√
+                        // ?
                         //QStringList qlist = currentText.split(" ");
                         m_editLine->setText(currentText);
 
-                        m_editLine->show();       // œ‘ æ
-                        m_editLine->raise();      // ∑≈µΩ◊Ó…œ≤„
+                        m_editLine->show();       // ?
+                        m_editLine->raise();      // ??
                         m_editLine->setFocusPolicy(Qt::StrongFocus);
-                        m_editLine->setFocus();   // ªÒµ√Ωπµ„
+                        m_editLine->setFocus();   // ?
 
 
-                        // ”√ rolabel µƒ 3D Œª÷√Õ∂”∞µΩ∆¡ƒª£¨◊˜Œ™ ‰»ÎøÚŒª÷√
+                        //  rolabel  3D ????
                         if (!m_occView || m_rolabel.IsNull()) {
-                            // fallback£∫ÕÀªÿ Û±ÍŒª÷√“≤––
+                            // fallback??
                         }
                         else {
                             Standard_Integer vx = 0, vy = 0;
@@ -1477,13 +1475,13 @@ namespace Mayo {
 
                             QPoint viewLocalPos(vx, vy);
 
-                            // »Áπ˚ƒ„∑¢œ÷ y …œœ¬µﬂµπ£¨∆Ù”√’‚“ª––£∫
+                            // ? y ???
                             // viewLocalPos.setY(viewWidget->height() - vy);
 
                             QPoint globalPos = viewWidget->mapToGlobal(viewLocalPos);
                             QPoint localPos = parentWidget->mapFromGlobal(globalPos);
 
-                            // Œ¢µ˜£∫»√ ‰»ÎøÚæ”÷–∂‘∆ÎŒƒ±æ
+                            // ??
                             localPos -= QPoint(m_editLine->width() / 2, m_editLine->height() / 2);
                             localPos += QPoint(0, -10);
 
@@ -1508,7 +1506,7 @@ namespace Mayo {
 
                             const Standard_Real angleNew = angleDeg * M_PI / 180.0;
 
-                            // »Ù∂≥Ω·◊¥Ã¨∂™ ß£¨∂µµ◊¥”µ±«∞ manipulator »°“ª¥Œ£®±‹√‚ ‰»ÎøÚ÷±Ω””√µΩ≤ªŒ»∂®÷·£©
+                            // ?????? manipulator ??????
                             if (!m_hasRotateAbsAnchor) {
                                 const gp_Ax2 ax2 = m_aManipulator->Position();
                                 const int idx = m_aManipulator->ActiveAxisIndex();
@@ -1530,16 +1528,16 @@ namespace Mayo {
                                 return;
                             }
 
-                            // ∏¸–¬Ω«∂»Œƒ◊÷
+                            // ??
                             m_rolabel->SetText(TCollection_ExtendedString(txt.toStdWString().c_str()));
                             m_context->Redisplay(m_rolabel, true);
 
-                            // ”√ frozen µƒ÷· + pivot£¨ππ‘Ï°∞Œ®“ªµƒ°±–˝◊™‘ˆ¡ø
+                            //  frozen  + pivot????
                             const gp_Ax1 rotAxis(m_rotateAbsAnchorWorld, m_rotateAbsAxisWorld);
                             gp_Trsf rotDelta;
                             rotDelta.SetRotation(rotAxis, delta);
 
-                            // 1) ∂‘œÛ£∫”√Õ¨“ª∏ˆ rotDelta ∏¸–¬£®∫ÕÕœ◊ß“ª÷¬£©
+                            // 1) ?? rotDelta ????
                             Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
                             AIS_ManipulatorObjectSequence::Iterator it(*objects);
                             for (; it.More(); it.Next()) {
@@ -1555,15 +1553,15 @@ namespace Mayo {
                                 }
                             }
 
-                            // 2) Õœ∂Ø∆˜£∫Õ¨—˘”√ rotDelta ±‰ªªÀ¸µƒ gp_Ax2£®≤ª“™‘Ÿ≤æÿ’Û÷ÿΩ®£©
+                            // 2) ?? rotDelta  gp_Ax2???
                             gp_Ax2 newAx2 = m_aManipulator->Position();
                             newAx2.Transform(rotDelta);
                             m_aManipulator->SetPosition(newAx2);
 
-                            // 3) ∏¸–¬ª∫¥ÊΩ«∂»£®œ¬“ª¥Œ ‰»Î”√£©
+                            // 3) ?????
                             m_rotateAbsAngleRad = angleNew;
 
-                            // 4) πÏº£œ‘ æ£∫Õ¨“ª∏˘ frozen ÷·
+                            // 4) ???? frozen 
                             ShowRotationTrajectory(m_context, rotAxis, 0.0, angleNew);
 
                             redrawView();
@@ -1579,7 +1577,7 @@ namespace Mayo {
             }
         }
 
-        
+
 
         if (m_aManipulatorReady && m_aManipulatorDo)
         {
@@ -1588,14 +1586,14 @@ namespace Mayo {
             {
                 //emit CGlobalEventSender::getInstance()->occManipulatorMoved();
 
-                m_aManipulator->StopTransform(Standard_True);	// ÷ÿ÷√∆ º±‰ªª≤Œ ˝£®∫Ø ˝≤Œ ˝Œ™ Standard_False ‘Ú≥∑œ˙±æ¥Œµƒ±‰ªª£©
+                m_aManipulator->StopTransform(Standard_True);	// ?? Standard_False ?
 
-                m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); // ∆Ù”√¡À X ÷·µƒ∆Ω“∆
-                m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); // ∆Ù”√¡À Y ÷·µƒ∆Ω“∆
-                m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); // ∆Ù”√¡À Z ÷·µƒ∆Ω“∆
-                m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); // ∆Ù”√¡À X ÷·µƒ–˝◊™
-                m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); // ∆Ù”√¡À Y ÷·µƒ–˝◊™
-                m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); // ∆Ù”√¡À Z ÷·µƒ–˝◊™
+                m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); //  X ?
+                m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); //  Y ?
+                m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); //  Z ?
+                m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); //  X ?
+                m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); //  Y ?
+                m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); //  Z ?
 
                 gp_Ax2 tmpAx21 = m_aManipulator->Position();
                 m_aManipulator->Attach(m_aSequence, m_attachOption);
@@ -1616,7 +1614,7 @@ namespace Mayo {
                 m_aManipulator->DeactivateCurrentMode();
                 m_aManipulatorDo = false;
             }
-                        
+
         }
     }
 

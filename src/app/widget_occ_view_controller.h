@@ -15,7 +15,7 @@
 #include <AIS_Shape.hxx>
 #include <AIS_TextLabel.hxx>
 #include <PrsDim_LengthDimension.hxx>
-
+#include <gp_Pnt.hxx>
 
 #include <QtCore/QObject>
 #include <QtCore/QPoint>
@@ -35,191 +35,212 @@ class SoDragger;
 
 namespace Mayo {
 
-class IWidgetOccView;
+    class IWidgetOccView;
 
-class WidgetOccViewController : public QObject, public V3dViewController {
-    Q_OBJECT
-public:
-    WidgetOccViewController(IWidgetOccView* occView = nullptr, AIS_InteractiveContext* context = nullptr);
-
-    bool eventFilter(QObject* watched, QEvent* event) override;
-
-    void setNavigationStyle(View3dNavigationStyle style);
-
-    void startManipulator(GraphicsObjectPtr object, float mat[12]);
-
-    void startManipulator(std::vector<GraphicsObjectPtr>& gfxObjects);
-
-    void setManipulatorReady(bool ready);
-
-    bool getManipulatorReady();
-
-    void stopManipulator();
-
-    gp_Pnt getTransform();
-
-    void ShowRotationTrajectory(const Handle(AIS_InteractiveContext)& ctx, const gp_Ax1& rotationAxis, double startAngle, double endAngle);
-
-    void ShowTransformTrajectory(const Handle(AIS_InteractiveContext)& ctx, const gp_Ax1& rotationAxis, gp_Pnt startPoint, gp_Pnt endPoint);
-
-
-    void printWidgetTree(QWidget* widget, int depth = 0);
-
-protected:
-    void redrawView() override;
-
-private:
-    static Position toPosition(const QPoint& pnt) { return { pnt.x(), pnt.y() }; }
-    static QPoint toQPoint(const Position& pos) { return { pos.x, pos.y }; }
-
-    void startDynamicAction(DynamicAction action) override;
-    void stopDynamicAction() override;
-
-    void setViewCursor(const QCursor& cursor);
-
-    std::unique_ptr<IRubberBand> createRubberBand() override;
-    struct RubberBand;
-
-    void handleEvent(const QEvent* event);
-    void handleKeyPress(const QKeyEvent* event);
-    void handleKeyRelease(const QKeyEvent* event);
-    void handleMouseButtonPress(const QMouseEvent* event);
-    void handleMouseMove(const QMouseEvent* event);
-    void handleMouseButtonRelease(const QMouseEvent* event);
-    void handleMouseWheel(const QWheelEvent* event);
-
-    Quantity_Color colorFromAxisIndex(int axisIndex);
-
-
-    // -- Action matching
-
-    // User input: key, mouse button, ...
-    using Input = int;
-
-    // Sequence of user inputs being "on" : key pressed, mouse button pressed, ...
-    class InputSequence {
+    class WidgetOccViewController : public QObject, public V3dViewController {
+        Q_OBJECT
     public:
-        void push(Input in);
-        void release(Input in);
-        void clear();
-        Span<const Input> data() const { return m_inputs; }
+        WidgetOccViewController(IWidgetOccView* occView = nullptr, AIS_InteractiveContext* context = nullptr);
 
-        enum class Operation { None, Push, Release };
-        Operation lastOperation() const { return m_lastOperation; }
-        Input lastInput() const { return m_lastInput; }
+        bool eventFilter(QObject* watched, QEvent* event) override;
 
-        bool equal(std::initializer_list<Input> other) const;
+        void setNavigationStyle(View3dNavigationStyle style);
 
-        void setPrePushCallback(std::function<void(Input)> fn) { m_fnPrePushCallback = std::move(fn); }
-        void setPreReleaseCallback(std::function<void(Input)> fn) { m_fnPreReleaseCallback = std::move(fn); }
-        void setClearCallback(std::function<void()> fn) { m_fnClearCallback = std::move(fn); }
+        void startManipulator(GraphicsObjectPtr object, float mat[12]);
+
+        void startManipulator(std::vector<GraphicsObjectPtr>& gfxObjects);
+
+        void setManipulatorReady(bool ready);
+
+        bool getManipulatorReady();
+
+        void stopManipulator();
+
+        gp_Pnt getTransform();
+
+        void ShowRotationTrajectory(const Handle(AIS_InteractiveContext)& ctx, const gp_Ax1& rotationAxis, double startAngle, double endAngle);
+
+        void ShowTransformTrajectory(const Handle(AIS_InteractiveContext)& ctx, const gp_Ax1& rotationAxis, gp_Pnt startPoint, gp_Pnt endPoint);
+
+
+        void printWidgetTree(QWidget* widget, int depth = 0);
+
+    protected:
+        void redrawView() override;
 
     private:
-        std::vector<Input> m_inputs;
-        Operation m_lastOperation = Operation::None;
-        Input m_lastInput = -1;
-        std::function<void(Input)> m_fnPrePushCallback;
-        std::function<void(Input)> m_fnPreReleaseCallback;
-        std::function<void()> m_fnClearCallback;
+        static Position toPosition(const QPoint& pnt) { return { pnt.x(), pnt.y() }; }
+        static QPoint toQPoint(const Position& pos) { return { pos.x, pos.y }; }
+
+        void startDynamicAction(DynamicAction action) override;
+        void stopDynamicAction() override;
+
+        void setViewCursor(const QCursor& cursor);
+
+        std::unique_ptr<IRubberBand> createRubberBand() override;
+        struct RubberBand;
+
+        void handleEvent(const QEvent* event);
+        void handleKeyPress(const QKeyEvent* event);
+        void handleKeyRelease(const QKeyEvent* event);
+        void handleMouseButtonPress(const QMouseEvent* event);
+        void handleMouseMove(const QMouseEvent* event);
+        void handleMouseButtonRelease(const QMouseEvent* event);
+        void handleMouseWheel(const QWheelEvent* event);
+
+        Quantity_Color colorFromAxisIndex(int axisIndex);
+
+
+        // -- Action matching
+
+        // User input: key, mouse button, ...
+        using Input = int;
+
+        // Sequence of user inputs being "on" : key pressed, mouse button pressed, ...
+        class InputSequence {
+        public:
+            void push(Input in);
+            void release(Input in);
+            void clear();
+            Span<const Input> data() const { return m_inputs; }
+
+            enum class Operation { None, Push, Release };
+            Operation lastOperation() const { return m_lastOperation; }
+            Input lastInput() const { return m_lastInput; }
+
+            bool equal(std::initializer_list<Input> other) const;
+
+            void setPrePushCallback(std::function<void(Input)> fn) { m_fnPrePushCallback = std::move(fn); }
+            void setPreReleaseCallback(std::function<void(Input)> fn) { m_fnPreReleaseCallback = std::move(fn); }
+            void setClearCallback(std::function<void()> fn) { m_fnClearCallback = std::move(fn); }
+
+        private:
+            std::vector<Input> m_inputs;
+            Operation m_lastOperation = Operation::None;
+            Input m_lastInput = -1;
+            std::function<void(Input)> m_fnPrePushCallback;
+            std::function<void(Input)> m_fnPreReleaseCallback;
+            std::function<void()> m_fnClearCallback;
+        };
+
+        // Base class to provide matching of DynamicAction from an InputSequence object
+        class ActionMatcher {
+        public:
+            ActionMatcher(const InputSequence* seq) : inputs(*seq) {}
+            virtual ~ActionMatcher() = default;
+
+            virtual bool matchRotation() const = 0;
+            virtual bool matchPan() const = 0;
+            virtual bool matchZoom() const = 0;
+            virtual bool matchWindowZoom() const = 0;
+
+            virtual void onInputPrePush(Input) {}
+            virtual void onInputPreRelease(Input) {}
+            virtual void onInputCleared() {}
+
+            const InputSequence& inputs;
+        };
+
+        // Fabrication to create corresponding ActionMatcher from navigation style
+        static std::unique_ptr<ActionMatcher> createActionMatcher(View3dNavigationStyle style, const InputSequence* seq);
+        class Mayo_ActionMatcher;
+        class Catia_ActionMatcher;
+        class SolidWorks_ActionMatcher;
+        class Unigraphics_ActionMatcher;
+        class ProEngineer_ActionMatcher;
+
+        // -- Attributes
+
+        IWidgetOccView* m_occView = nullptr;
+        AIS_InteractiveContext* m_context = nullptr;
+        Position m_prevPos;
+        gp_Pnt m_initialPosition;
+        gp_Trsf m_initialRotation;
+        int m_lastOperation = -1;
+        Handle(AIS_Shape) m_trajectoryShape = nullptr;
+        Handle(AIS_TextLabel) m_label = nullptr;
+        Handle(AIS_TextLabel) m_rolabel = nullptr;
+        // 平移距离尺寸标注（独立于轨迹线的标注辅助线+箭头+文字）
+        Handle(PrsDim_LengthDimension) m_translateDim = nullptr;
+
+        // 缓存当前平移距离（用于双击标注时预填输入框）
+        double m_translateDimValueMm = 0.0;
+
+        // 缓存标注文字位置（用于输入框定位）
+        gp_Pnt m_translateDimTextPosWorld;
+        bool m_hasTranslateDimTextPosWorld = false;
+
+        Handle(AIS_Shape) arrowStart = nullptr;
+        Handle(AIS_Shape) arrowEnd = nullptr;
+        QLineEdit* m_editLine = nullptr;
+        //int activeModeTmp = 0;
+        //int activeAxisIndexTmp = 0;
+        //Handle(AIS_Shape) moveShape = nullptr;
+        //Handle(AIS_Shape) rotationShape = nullptr;
+
+        gp_Ax1 tmpRotationAxis;
+        Standard_Real tempAngle;
+
+        View3dNavigationStyle m_navigStyle = View3dNavigationStyle::Mayo;
+        InputSequence m_inputSequence;
+        std::unique_ptr<ActionMatcher> m_actionMatcher;
+
+        Handle(AIS_ManipulatorObjectSequence) m_aSequence;
+        Handle(AIS_Manipulator) m_aManipulator;
+        bool m_aManipulatorReady;
+        bool m_aManipulatorDo;
+        AIS_Manipulator::OptionsForAttach m_attachOption;
+        int m_meshId;
+
+        Position m_lastManipulatorPos;
+
+        //template<class T>
+        //class CoinPtr : public boost::intrusive_ptr<T> {
+        //public:
+        //    // Too bad, VC2013 does not support constructor inheritance
+        //    //using boost::intrusive_ptr<T>::intrusive_ptr;
+        //    using inherited = boost::intrusive_ptr<T>;
+        //    CoinPtr() = default;
+        //    CoinPtr(T* p, bool add_ref = true) :inherited(p, add_ref) {}
+        //    template<class Y> CoinPtr(CoinPtr<Y> const& r) : inherited(r) {}
+
+        //    operator T* () const {
+        //        return this->get();
+        //    }//explicit bombs
+        //};
+
+
+        //CoinPtr<SoDragger> pcDragger;
+
+    private:
+        /*static void dragStartCallback(void* data, SoDragger* d);
+        static void dragFinishCallback(void* data, SoDragger* d);
+        static void dragMotionCallback(void* data, SoDragger* d);*/
+        gp_Pnt m_posTransform;
+
+        bool m_isFirstDisplay = true;
+
+        gp_XYZ m_axis;
+
+        int m_distanceAxisIndex = -1;  // ?? distance ???0=X,1=Y,2=Z
+
+        // --- ???? ---
+        gp_Pnt m_translateAbsAnchorWorld;
+        gp_Dir m_translateAbsAxisWorld;
+        int    m_translateAbsAxisIndex = -1;   // 0/1/2
+        bool   m_hasTranslateAbsAnchor = false;
+
+
+        // --- ??? ---
+        bool         m_hasRotateAbsAnchor = false;
+        gp_Pnt       m_rotateAbsAnchorWorld;   // pivot? manipulator  Location
+        gp_Dir       m_rotateAbsAxisWorld;     // ????
+        int          m_rotateAbsAxisIndex = -1;
+        Standard_Real m_rotateAbsAngleRad = 0.0; // ?????rad
+
+
+
+
     };
-
-    // Base class to provide matching of DynamicAction from an InputSequence object
-    class ActionMatcher {
-    public:
-        ActionMatcher(const InputSequence* seq) : inputs(*seq) {}
-        virtual ~ActionMatcher() = default;
-
-        virtual bool matchRotation() const = 0;
-        virtual bool matchPan() const = 0;
-        virtual bool matchZoom() const = 0;
-        virtual bool matchWindowZoom() const = 0;
-
-        virtual void onInputPrePush(Input) {}
-        virtual void onInputPreRelease(Input) {}
-        virtual void onInputCleared() {}
-
-        const InputSequence& inputs;
-    };
-
-    // Fabrication to create corresponding ActionMatcher from navigation style
-    static std::unique_ptr<ActionMatcher> createActionMatcher(View3dNavigationStyle style, const InputSequence* seq);
-    class Mayo_ActionMatcher;
-    class Catia_ActionMatcher;
-    class SolidWorks_ActionMatcher;
-    class Unigraphics_ActionMatcher;
-    class ProEngineer_ActionMatcher;
-
-    // -- Attributes
-
-    IWidgetOccView* m_occView = nullptr;
-    AIS_InteractiveContext* m_context = nullptr;
-    Position m_prevPos;
-    gp_Pnt m_initialPosition;
-    gp_Trsf m_initialRotation;
-    int m_lastOperation = -1;
-    Handle(AIS_Shape) m_trajectoryShape = nullptr;
-    Handle(AIS_TextLabel) m_label = nullptr;
-    Handle(AIS_TextLabel) m_rolabel = nullptr;
-
-    // 新增：平移长度标注（PrsDim）
-    Handle(PrsDim_LengthDimension) m_translateDim = nullptr;
-
-    // 新增：缓存当前显示的平移距离（用于双击输入框时预填 oldDistanceMm）
-    double m_translateDimValueMm = 0.0;
-
-    // 新增：缓存标注的世界坐标（用于把输入框放在标注附近）
-    gp_Pnt m_translateDimTextPosWorld;
-    bool m_hasTranslateDimTextPosWorld = false;
-
-    Handle(AIS_Shape) arrowStart = nullptr;
-    Handle(AIS_Shape) arrowEnd = nullptr;
-    QLineEdit* m_editLine = nullptr;
-    //int activeModeTmp = 0;
-    //int activeAxisIndexTmp = 0;
-    //Handle(AIS_Shape) moveShape = nullptr;
-    //Handle(AIS_Shape) rotationShape = nullptr;
-    
-    gp_Ax1 tmpRotationAxis;
-    Standard_Real tempAngle;
-
-    View3dNavigationStyle m_navigStyle = View3dNavigationStyle::Mayo;
-    InputSequence m_inputSequence;
-    std::unique_ptr<ActionMatcher> m_actionMatcher;
-
-    Handle(AIS_ManipulatorObjectSequence) m_aSequence;
-    Handle(AIS_Manipulator) m_aManipulator;
-    bool m_aManipulatorReady;
-    bool m_aManipulatorDo;
-    AIS_Manipulator::OptionsForAttach m_attachOption;
-    int m_meshId;
-
-private:
-    /*static void dragStartCallback(void* data, SoDragger* d);
-    static void dragFinishCallback(void* data, SoDragger* d);
-    static void dragMotionCallback(void* data, SoDragger* d);*/
-    gp_Pnt m_posTransform;
-
-    gp_XYZ m_axis;
-
-    int m_distanceAxisIndex = -1;  // 记录当前 distance 对应的平移轴（0=X,1=Y,2=Z）
-
-    // --- 平移辅助线的绝对起点 ---
-    gp_Pnt m_translateAbsAnchorWorld;
-    gp_Dir m_translateAbsAxisWorld;
-    int    m_translateAbsAxisIndex = -1;   // 0/1/2
-    bool   m_hasTranslateAbsAnchor = false;
-
-
-    // --- 旋转辅助线的绝对起点 ---
-    bool         m_hasRotateAbsAnchor = false;
-    gp_Pnt       m_rotateAbsAnchorWorld;   // pivot（通常就是 manipulator 的 Location）
-    gp_Dir       m_rotateAbsAxisWorld;     // 当前冻结的旋转轴方向（世界坐标系）
-    int          m_rotateAbsAxisIndex = -1;
-    Standard_Real m_rotateAbsAngleRad = 0.0; // 当前累计角（带符号，rad）
-
-
-
-
-};
 
 } // namespace Mayo
