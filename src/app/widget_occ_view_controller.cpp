@@ -176,15 +176,15 @@ namespace Mayo {
         m_aSequence->Clear();
         m_aSequence->Append(object);
 
-        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  X 
-        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  Y 
-        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  Z 
+        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // 禁用了 X 轴的缩放 
+        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // 禁用了 Y 轴的缩放 
+        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // 禁用了 Z 轴的缩放
 
         m_attachOption.AdjustPosition = true;
         m_attachOption.AdjustSize = false;
         m_attachOption.EnableModes = false;
 
-        // ??
+        // 将操纵器附在创建的长方体上
         //m_aManipulator->Attach(object, m_attachOption);
         m_aManipulator->Attach(m_aSequence, m_attachOption);
 
@@ -192,12 +192,12 @@ namespace Mayo {
         occMatToAx2(mat, tmpAx2, 0);
         m_aManipulator->SetPosition(tmpAx2);
 
-        // ????
-        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // ?
-        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // ?
-        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // 
+        // 启用指定的操纵模式
+        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // 启用移动
+        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // 启用旋转
+        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // 启用缩放
 
-        // 
+        // 激活操纵器
         //m_aManipulator->SetModeActivationOnDetection(Standard_True);
     }
 
@@ -209,25 +209,25 @@ namespace Mayo {
             m_aSequence->Append(gfxObjects.at(i));
         }
 
-        //  SetPart ????????
-        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  X 
-        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  Y 
-        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  //  Z 
+        // 可以用 SetPart 禁用或启用某些轴的平移、旋转或缩放的可视部分
+        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // 禁用了 X 轴的缩放 
+        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // 禁用了 Y 轴的缩放
+        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Scaling, Standard_False);  // 禁用了 Z 轴的缩放
 
 
         m_attachOption.AdjustPosition = true;
         m_attachOption.AdjustSize = false;
         m_attachOption.EnableModes = false;
 
-        // ??
+        // 将操纵器附在创建的长方体上
         m_aManipulator->Attach(m_aSequence, m_attachOption);
 
-        //// ????
-        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // ?
-        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // ?
-        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // 
+        //// 启用指定的操纵模式
+        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // 启用移动
+        m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // 启用旋转
+        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // 启用缩放
 
-        // 
+        // 激活操纵器
         //m_aManipulator->SetModeActivationOnDetection(Standard_True);
     }
 
@@ -262,7 +262,7 @@ namespace Mayo {
         double endAngle)
     {
         if (!m_trajectoryShape.IsNull()) {
-            ctx->Remove(m_trajectoryShape, Standard_False); // ???
+            ctx->Remove(m_trajectoryShape, Standard_False); // 移除旧轨迹
             m_trajectoryShape.Nullify();
         }
 
@@ -273,22 +273,22 @@ namespace Mayo {
         }
 
         if (!m_label.IsNull()) {
-            ctx->Remove(m_label, Standard_False); // ???
+            ctx->Remove(m_label, Standard_False); // 移除旧轨迹的文字
             m_label.Nullify();
         }
 
         if (!m_rolabel.IsNull()) {
-            ctx->Remove(m_rolabel, Standard_False); // ???
+            ctx->Remove(m_rolabel, Standard_False); // 移除旧轨迹的文字
             m_rolabel.Nullify();
         }
 
         if (!arrowStart.IsNull()) {
-            ctx->Remove(arrowStart, Standard_False); // ???
+            ctx->Remove(arrowStart, Standard_False); // 移除开始方向箭头
             arrowStart.Nullify();
         }
 
         if (!arrowEnd.IsNull()) {
-            ctx->Remove(arrowEnd, Standard_False); // ??
+            ctx->Remove(arrowEnd, Standard_False); // 移除结束方向箭头
             arrowEnd.Nullify();
         }
 
@@ -300,8 +300,8 @@ namespace Mayo {
 
         tempAngle = endAngle;
 
-        // ===== ??/????X/Y/Z =====
-        // ? rotationAxis.Direction() ? Ax2  X/Y/Z  dot?????
+        // ===== 新增：旋转轨迹/文字颜色跟随当前旋转轴（X/Y/Z） =====
+        // 通过 rotationAxis.Direction() 与操纵器当前 Ax2 的 X/Y/Z 方向做 dot，取最接近的轴作为颜色来源
         Quantity_Color trajColor(Quantity_NOC_BLACK);
         if (!m_aManipulator.IsNull()) {
             const gp_Ax2 ax2 = m_aManipulator->Position();
@@ -312,24 +312,24 @@ namespace Mayo {
             const double dz = std::abs(d.Dot(ax2.Direction())); // Z
 
             int axisIndexForColor = (dx >= dy && dx >= dz) ? 0 : (dy >= dz ? 1 : 2);
-            trajColor = colorFromAxisIndex(axisIndexForColor); // 0->,1->,2->
+            trajColor = colorFromAxisIndex(axisIndexForColor); // 0->红,1->绿,2->蓝
         }
         // ==========================================================
 
 
-        // ??
+        // 创建圆弧轨迹
         Handle(Geom_Circle) trajectoryCircle = new Geom_Circle(gp_Ax2(rotationAxis.Location(), rotationAxis.Direction()),
             0.4 * rotationAxis.Location().Distance(m_occView->v3dView().get()->Camera()->Eye()));
 
         Handle(Geom_TrimmedCurve) trajectoryArc = new Geom_TrimmedCurve(trajectoryCircle, startAngle, endAngle);
 
-        // ???
+        // 获取起始点和终点位置
         gp_Pnt startPoint = trajectoryArc->Value(startAngle);
         gp_Pnt endPoint = trajectoryArc->Value(endAngle);
 
-        // ?
+        // 计算起点箭头方向
         gp_Vec dirStart = gp_Vec(trajectoryArc->Value(startAngle + 0.01), trajectoryArc->Value(startAngle));
-        // ?????
+        // 计算终点箭头方向（方向要反）
         gp_Vec dirEnd = gp_Vec(trajectoryArc->Value(endAngle - 0.01), trajectoryArc->Value(endAngle));
 
         if (endAngle < 0) {
@@ -343,10 +343,10 @@ namespace Mayo {
 
         BRepBuilderAPI_MakeEdge edgeMaker(trajectoryArc);
 
-        // ?
+        // 创建显示对象
         m_trajectoryShape = new AIS_Shape(edgeMaker.Edge());
 
-        // ?
+        // 设置显示属性
 
         m_trajectoryShape->SetColor(trajColor);
 
@@ -355,10 +355,10 @@ namespace Mayo {
         m_trajectoryShape->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(m_trajectoryShape, 10);
 
-        // ??
+        // 显示轨迹
         ctx->Display(m_trajectoryShape, Standard_False);
 
-        // ?
+        // 箭头参数
         Standard_Real arrowLength = 24.0;
         Standard_Real arrowRadius = 8.0;
 
@@ -371,7 +371,7 @@ namespace Mayo {
         TopoDS_Shape coneEnd = BRepPrimAPI_MakeCone(endAx2, arrowRadius, 0.0, arrowLength);
 
 
-        // ?? AIS_Shape ?
+        // 转为 AIS_Shape 显示
         arrowEnd = new AIS_Shape(coneEnd);
         arrowEnd->SetDisplayMode(AIS_Shaded);
         arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
@@ -391,17 +391,17 @@ namespace Mayo {
         ctx->Display(arrowStart, false);
 
 
-        // ??
-        gp_Pnt circleCenter = trajectoryCircle->Location(); // ?
-        Standard_Real middleAngle = (startAngle + tempAngle) / 2.0; // ?
-        Standard_Real radius = trajectoryCircle->Radius(); // ???
+        // 计算圆弧的相关信息
+        gp_Pnt circleCenter = trajectoryCircle->Location(); // 圆心位置
+        Standard_Real middleAngle = (startAngle + tempAngle) / 2.0; // 计算中间角度
+        Standard_Real radius = trajectoryCircle->Radius(); // 圆的半径
 
-        // ????
+        // 获取圆弧所在平面的坐标系
         gp_Ax2 axis = trajectoryCircle->Position();
         gp_Dir xDir = axis.XDirection();
         gp_Dir yDir = axis.YDirection();
 
-        // ??
+        // 计算中间点在圆弧上的位置
         gp_Vec xVec(xDir);
         gp_Vec yVec(yDir);
         xVec *= radius * cos(middleAngle);
@@ -409,7 +409,7 @@ namespace Mayo {
 
         gp_Pnt middlePoint = circleCenter.Translated(xVec + yVec);
 
-        // ?????
+        // 在终点显示偏移角度
         Standard_Real distance = (tempAngle - startAngle) * 180.0 / M_PI;
 
         m_rolabel = new AIS_TextLabel();
@@ -418,7 +418,7 @@ namespace Mayo {
         m_rolabel->SetPosition(middlePoint.XYZ());
 
 
-        // ???
+        // 关键：放到最顶层
         m_rolabel->SetZLayer(Graphic3d_ZLayerId_Topmost);
 
         ctx->Display(m_rolabel, Standard_False);
@@ -443,38 +443,39 @@ namespace Mayo {
 
     void Mayo::WidgetOccViewController::ShowTransformTrajectory(const Handle(AIS_InteractiveContext)& ctx, const gp_Ax1& rotationAxis, gp_Pnt startPoint, gp_Pnt endPoint)
     {
-        // ????
+        // 在更新轨迹的函数中：
         if (!m_trajectoryShape.IsNull()) {
-            ctx->Remove(m_trajectoryShape, Standard_False); // ???
+            ctx->Remove(m_trajectoryShape, Standard_False); // 移除旧轨迹
             m_trajectoryShape.Nullify();
         }
 
         //if (!m_label.IsNull()) {
-        //    ctx->Remove(m_label, Standard_False); // ???
+        //    ctx->Remove(m_label, Standard_False); // 移除旧轨迹的文字
         //    m_label.Nullify();
         //}
 
         if (!m_translateDim.IsNull()) {
-            ctx->Remove(m_translateDim, Standard_False);
+            ctx->Remove(m_translateDim, Standard_False); // 移除旧轨迹的文字
             m_translateDim.Nullify();
         }
 
 
         if (!m_rolabel.IsNull()) {
-            ctx->Remove(m_rolabel, Standard_False); // ???
+            ctx->Remove(m_rolabel, Standard_False); // 移除旧轨迹的文字
             m_rolabel.Nullify();
         }
 
         if (!arrowStart.IsNull()) {
-            ctx->Remove(arrowStart, Standard_False); // ???
+            ctx->Remove(arrowStart, Standard_False); // 移除开始方向箭头
             arrowStart.Nullify();
         }
 
         if (!arrowEnd.IsNull()) {
-            ctx->Remove(arrowEnd, Standard_False); // ??
+            ctx->Remove(arrowEnd, Standard_False); // 移除结束方向箭头
             arrowEnd.Nullify();
         }
 
+        // 创建直线几何
         if (endPoint.IsEqual(startPoint, 1e-6)) {
             ctx->UpdateCurrentViewer(); // 确保 Remove 立即刷新显示
             return;
@@ -485,17 +486,17 @@ namespace Mayo {
         m_trajectoryShape = lineShape;
 
 
-        // ???????? m_distanceAxisIndex = tmpActiveAxisIndex;
+        // 优先使用“已记录的平移轴”（拖拽时你在外面已经写过 m_distanceAxisIndex = tmpActiveAxisIndex;）
         int axisIndexForColor = m_distanceAxisIndex;
 
-        // ?? anchor ???
+        // 次选：如果你启用了绝对 anchor 冻结，也可以用冻结轴
         if (axisIndexForColor < 0 || axisIndexForColor > 2) {
             if (m_hasTranslateAbsAnchor) {
                 axisIndexForColor = m_translateAbsAxisIndex;
             }
         }
 
-        // ?? ActiveAxisIndex???? -1
+        // 兜底：最后才去读 ActiveAxisIndex（注意：输入框场景下它经常是 -1）
         if (axisIndexForColor < 0 || axisIndexForColor > 2) {
             axisIndexForColor = (!m_aManipulator.IsNull()) ? m_aManipulator->ActiveAxisIndex() : -1;
         }
@@ -509,7 +510,7 @@ namespace Mayo {
 
         m_trajectoryShape->SetWidth(3);
 
-        // ?? Topmost ? + ??
+        // 关键：放到 Topmost 图层 + 提升显示优先级
         m_trajectoryShape->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(m_trajectoryShape, 10);
 
@@ -519,12 +520,12 @@ namespace Mayo {
         const gp_Vec axisVec(rotationAxis.Direction());
         Standard_Real signedDistance = v.Dot(axisVec);
 
-        //  -0.000000 ??
+        // 避免 -0.000000 之类的显示
         if (std::abs(signedDistance) < 1e-9) {
             signedDistance = 0.0;
         }
 
-        // ? std::to_string ?
+        // 按固定小数位输出，避免 std::to_string 冗长
         std::ostringstream oss;
         oss.setf(std::ios::fixed);
 
@@ -1253,7 +1254,9 @@ namespace Mayo {
                             [this, oldDistanceMm, axisIndexFrozen, axisDirFrozen, anchorFrozen]()
                             {
                                 const QString distanceText = m_editLine->text().trimmed();
-                                if (distanceText.isEmpty() || m_label.IsNull()) {
+
+                                // 不再依赖m_label
+                                if (distanceText.isEmpty()) {
                                     delete m_editLine;
                                     m_editLine = nullptr;
                                     return;
@@ -1273,10 +1276,10 @@ namespace Mayo {
                                     return;
                                 }
 
-                                // ? manipulator ??
+                                // 当前 manipulator 的坐标系（当前轴向）
                                 gp_Ax2 curAx2 = m_aManipulator->Position();
 
-                                // 0/1/2 => X/Y/Z
+                                // 轴索引：0/1/2 => X/Y/Z
                                 int axisIndex = m_distanceAxisIndex;
                                 if (axisIndex < 0 || axisIndex > 2) {
                                     axisIndex = m_aManipulator->ActiveAxisIndex();
@@ -1295,11 +1298,11 @@ namespace Mayo {
                                 else
                                     axisDir = curAx2.Direction();  // Z
 
-                                // ? a? bmm
+                                // 旧值 a、新值 b（单位：mm）
                                 const Standard_Real oldModel = oldDistanceMm;
                                 const Standard_Real newModel = newDistanceMm;
 
-                                //  = b - a
+                                // 增量：Δ = b - a
                                 const Standard_Real deltaModel = newModel - oldModel;
                                 if (Abs(deltaModel) < 1e-12) {
                                     delete m_editLine;
@@ -1307,11 +1310,11 @@ namespace Mayo {
                                     return;
                                 }
 
-                                // ?
+                                // 轴向增量向量（世界坐标）
                                 gp_Vec deltaVec(axisDirFrozen);
                                 deltaVec *= deltaModel;
 
-                                //  label?? b
+                                // 更新 label：显示新的总位移 b
                                 {
                                     //QString text = QString("%1 mm").arg(newDistanceMm, 0, 'f', 3);
                                     //m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
@@ -1321,16 +1324,16 @@ namespace Mayo {
 
                                 }
 
-                                // 1) ???? ?? startPoint+b
+                                // 1) 先让拖动器也走同一个增量 Δ（不要“拍”到 startPoint+b）
                                 curAx2 = m_aManipulator->Position();
                                 gp_Pnt curLoc = curAx2.Location();
                                 gp_Pnt newLoc = curLoc.Translated(deltaVec);
 
-                                // ?????? location
+                                // 保持当前朝向不变，只更新 location
                                 gp_Ax2 newAx2(newLoc, curAx2.Direction(), curAx2.XDirection());
                                 m_aManipulator->SetPosition(newAx2);
 
-                                // 2) ??? 
+                                // 2) 对物体应用同一个增量 Δ
                                 gp_Trsf transformation;
                                 transformation.SetTranslation(deltaVec);
 
@@ -1354,14 +1357,14 @@ namespace Mayo {
                                     }
                                 }
 
-                                // 3) ??? 0 0 + b
+                                // 3) 轨迹线：必须从“绝对起点 0”画到 “0 + b”
                                 gp_Pnt startPoint = anchorFrozen;
                                 gp_Dir drawAxisDir = axisDirFrozen;
 
 
                                 gp_Pnt absEndPoint = startPoint.Translated(gp_Vec(drawAxisDir) * newModel);
 
-                                // ?ס???/?
+                                // 先同步缓存：输入框路径与拖动路径统一“绝对起点/轴”
                                 m_translateAbsAnchorWorld = anchorFrozen;
                                 m_translateAbsAxisWorld = axisDirFrozen;
                                 m_translateAbsAxisIndex = axisIndexFrozen;
@@ -1376,7 +1379,7 @@ namespace Mayo {
                                 redrawView();
 
 
-                                // 
+                                // 收尾
                                 delete m_editLine;
                                 m_editLine = nullptr;
 
@@ -1395,9 +1398,9 @@ namespace Mayo {
                     QWidget* parentWidget = m_occView->widget()->parentWidget();  // WidgetGuiDocument
 
                     if (!m_editLine) {
-                        m_editLine = new QLineEdit(parentWidget); //  viewer 
+                        m_editLine = new QLineEdit(parentWidget); // 覆盖在 viewer 上
 
-                        //m_editLine = new QLineEdit(nullptr);  // ????
+                        //m_editLine = new QLineEdit(nullptr);  // 没有父控件，系统浮动窗口
                         //m_editLine->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
                         m_editLine->setStyleSheet("background: white; color: black; border: 1px solid red;");
                         m_editLine->setAlignment(Qt::AlignCenter);
@@ -1409,19 +1412,19 @@ namespace Mayo {
                         m_editLine->hide();
 
 
-                        // ?
+                        // 设置文本框位置
                         //QStringList qlist = currentText.split(" ");
                         m_editLine->setText(currentText);
 
-                        m_editLine->show();       // ?
-                        m_editLine->raise();      // ??
+                        m_editLine->show();       // 显示
+                        m_editLine->raise();      // 放到最上层
                         m_editLine->setFocusPolicy(Qt::StrongFocus);
-                        m_editLine->setFocus();   // ?
+                        m_editLine->setFocus();   // 获得焦点
 
 
-                        //  rolabel  3D ????
+                        // 用 rolabel 的 3D 位置投影到屏幕，作为输入框位置
                         if (!m_occView || m_rolabel.IsNull()) {
-                            // fallback??
+                            // fallback：退回鼠标位置也行
                         }
                         else {
                             Standard_Integer vx = 0, vy = 0;
@@ -1434,13 +1437,13 @@ namespace Mayo {
 
                             QPoint viewLocalPos(vx, vy);
 
-                            // ? y ???
+                            // 如果你发现 y 上下颠倒，启用这一行：
                             // viewLocalPos.setY(viewWidget->height() - vy);
 
                             QPoint globalPos = viewWidget->mapToGlobal(viewLocalPos);
                             QPoint localPos = parentWidget->mapFromGlobal(globalPos);
 
-                            // ??
+                            // 微调：让输入框居中对齐文本
                             localPos -= QPoint(m_editLine->width() / 2, m_editLine->height() / 2);
                             localPos += QPoint(0, -10);
 
@@ -1465,7 +1468,7 @@ namespace Mayo {
 
                             const Standard_Real angleNew = angleDeg * M_PI / 180.0;
 
-                            // ?????? manipulator ??????
+                            // 若冻结状态丢失，兜底从当前 manipulator 取一次（避免输入框直接用到不稳定轴）
                             if (!m_hasRotateAbsAnchor) {
                                 const gp_Ax2 ax2 = m_aManipulator->Position();
                                 const int idx = m_aManipulator->ActiveAxisIndex();
@@ -1487,16 +1490,16 @@ namespace Mayo {
                                 return;
                             }
 
-                            // ??
+                            // 更新角度文字
                             m_rolabel->SetText(TCollection_ExtendedString(txt.toStdWString().c_str()));
                             m_context->Redisplay(m_rolabel, true);
 
-                            //  frozen  + pivot????
+                            // 用 frozen 的轴 + pivot，构造“唯一的”旋转增量
                             const gp_Ax1 rotAxis(m_rotateAbsAnchorWorld, m_rotateAbsAxisWorld);
                             gp_Trsf rotDelta;
                             rotDelta.SetRotation(rotAxis, delta);
 
-                            // 1) ?? rotDelta ????
+                            // 1) 对象：用同一个 rotDelta 更新（和拖拽一致）
                             Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
                             AIS_ManipulatorObjectSequence::Iterator it(*objects);
                             for (; it.More(); it.Next()) {
@@ -1512,15 +1515,15 @@ namespace Mayo {
                                 }
                             }
 
-                            // 2) ?? rotDelta  gp_Ax2???
+                            // 2) 拖动器：同样用 rotDelta 变换它的 gp_Ax2（不要再拆矩阵重建）
                             gp_Ax2 newAx2 = m_aManipulator->Position();
                             newAx2.Transform(rotDelta);
                             m_aManipulator->SetPosition(newAx2);
 
-                            // 3) ?????
+                            // 3) 更新缓存角度（下一次输入用）
                             m_rotateAbsAngleRad = angleNew;
 
-                            // 4) ???? frozen 
+                            // 4) 轨迹显示：同一根 frozen 轴 
                             ShowRotationTrajectory(m_context, rotAxis, 0.0, angleNew);
 
                             redrawView();
@@ -1545,14 +1548,14 @@ namespace Mayo {
             {
                 //emit CGlobalEventSender::getInstance()->occManipulatorMoved();
 
-                m_aManipulator->StopTransform(Standard_True);	// ?? Standard_False ?
+                m_aManipulator->StopTransform(Standard_True);	// 重置起始变换参数（函数参数为 Standard_False 则撤销本次的变换）
 
-                m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); //  X ?
-                m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); //  Y ?
-                m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); //  Z ?
-                m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); //  X ?
-                m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); //  Y ?
-                m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); //  Z ?
+                m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); // 启用了 X 轴的平移
+                m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); // 启用了 Y 轴的平移
+                m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_True); // 启用了 Z 轴的平移
+                m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); // 启用了 X 轴的旋转
+                m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); // 启用了 Y 轴的旋转
+                m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_True); // 启用了 Z 轴的旋转
 
                 gp_Ax2 tmpAx21 = m_aManipulator->Position();
                 m_aManipulator->Attach(m_aSequence, m_attachOption);
