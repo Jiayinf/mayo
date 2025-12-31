@@ -634,7 +634,7 @@ namespace Mayo {
         // NOTE: translation dimension is drawn by PrsDim_LengthDimension (dimension line + arrows + text)
 
 
-                // ==============================================
+        // ==============================================
 
     }
 
@@ -725,10 +725,10 @@ namespace Mayo {
             return;
 
         QEvent* passEvent = const_cast<QEvent*>(static_cast<const QEvent*>(event));
-        //  m_editLine ???
+        // 如果 m_editLine 有焦点，将事件转发给它
         if (m_editLine && m_editLine->hasFocus()) {
-            QApplication::sendEvent(m_editLine, passEvent);  // ?? m_editLine
-            return;  // ??
+            QApplication::sendEvent(m_editLine, passEvent);  // 将事件发送给 m_editLine
+            return;  // 阻止事件继续传播
         }
 
         m_inputSequence.push(event->key());
@@ -745,10 +745,10 @@ namespace Mayo {
             return;
 
         QEvent* passEvent = const_cast<QEvent*>(static_cast<const QEvent*>(event));
-        //  m_editLine ???
+        // 如果 m_editLine 有焦点，将事件转发给它
         if (m_editLine && m_editLine->hasFocus()) {
-            QApplication::sendEvent(m_editLine, passEvent);  // ?? m_editLine
-            return;  // ??
+            QApplication::sendEvent(m_editLine, passEvent);  // 将事件发送给 m_editLine
+            return;  // 阻止事件继续传播
         }
 
         m_inputSequence.release(event->key());
@@ -786,84 +786,78 @@ namespace Mayo {
 
                     if (0 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Y ?
-                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Z ?
+                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 Y 轴的平移
+                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 Z 轴的平移
                         currentOperation = 1;
                     }
                     else if (1 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  X ?
-                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Z ?
+                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 X 轴的平移
+                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 Z 轴的平移
                         currentOperation = 2;
                     }
                     else if (2 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  X ?
-                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Y ?
+                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 X 轴的平移
+                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 Y 轴的平移
                         currentOperation = 3;
                     }
 
-                    m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  X ?
-                    m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Y ?
-                    m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Z ?
+                    m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 X 轴的旋转 
+                    m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Y 轴的旋转 
+                    m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Z 轴的旋转 
                 }
                 else if (AIS_MM_Rotation == tmpActiveAxisMode)
                 {
                     if (0 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Y ?
-                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Z ?
+                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Y 轴的旋转
+                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Z 轴的旋转 
                         currentOperation = 4;
                         m_axis = gp_XYZ(1, 0, 0);
                         //m_aManipulator->SetPosition(gp_Ax2(m_aManipulator->Position().Location(), m_aManipulator->Position().XDirection()));
                     }
                     else if (1 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  X ?
-                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Z ?
+                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 X 轴的旋转 
+                        m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Z 轴的旋转
                         currentOperation = 5;
                         m_axis = gp_XYZ(0, 1, 0);
                         //m_aManipulator->SetPosition(gp_Ax2(m_aManipulator->Position().Location(), m_aManipulator->Position().YDirection()));
                     }
                     else if (2 == tmpActiveAxisIndex)
                     {
-                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  X ?
-                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); //  Y ?
+                        m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 X 轴的旋转 
+                        m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Y 轴的旋转
                         currentOperation = 6;
                         m_axis = gp_XYZ(0, 0, 1);
                         //m_aManipulator->SetPosition(gp_Ax2(m_aManipulator->Position().Location(), m_aManipulator->Position().XDirection().Crossed(m_aManipulator->Position().YDirection())));
                     }
 
-                    m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  X ?
-                    m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Y ?
-                    m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); //  Z ?
+                    m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 X 轴的旋转 
+                    m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 Y 轴的旋转
+                    m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Translation, Standard_False); // 禁用了 Z 轴的旋转
                 }
 
 
-                // ===== ????????(0/1/2)???/ =====
+
                 if (!m_aManipulator.IsNull()
                     && AIS_MM_Translation == tmpActiveAxisMode
                     && tmpActiveAxisIndex >= 0 && tmpActiveAxisIndex <= 2
-                    && m_aManipulator->HasActiveMode())   // ???? manipulator 
+                    && m_aManipulator->HasActiveMode())  
                 {
                     const gp_Ax2 ax2 = m_aManipulator->Position();
 
-                    // 1) ?? displacement ????
-                    //    ??? m_initialPosition
                     m_initialPosition = ax2.Location();
 
-                    // 2) ????
                     gp_Dir axisDir =
                         (tmpActiveAxisIndex == 0) ? ax2.XDirection() :
                         (tmpActiveAxisIndex == 1) ? ax2.YDirection() :
                         ax2.Direction();
 
-                    // 3) ??
-                    //    - ??anchor=?
-                    //    - ???anchor ? 0b 
-                    //    - ?anchor ??
+
                     if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
-                        m_translateAbsAnchorWorld = ax2.Location();   // ????
+                        m_translateAbsAnchorWorld = ax2.Location();   
                         m_translateAbsAxisWorld = axisDir;
                         m_translateAbsAxisIndex = tmpActiveAxisIndex;
                         m_hasTranslateAbsAnchor = true;
@@ -884,7 +878,7 @@ namespace Mayo {
                 {
                     if (currentOperation == m_lastOperation)
                     {
-                        //?
+                        //不需要更新
                     }
                     else
                     {
@@ -913,7 +907,7 @@ namespace Mayo {
                         m_aManipulator->SetPosition(tmpAx21);
                     }
 
-                    m_aManipulator->StartTransform(currPos.x(), currPos.y(), m_occView->v3dView());	// ????
+                    m_aManipulator->StartTransform(currPos.x(), currPos.y(), m_occView->v3dView());	// 初始化转换，记录起始位置
                 }
             }
         }
@@ -946,7 +940,7 @@ namespace Mayo {
                     {
                         if (m_aManipulator->HasActiveMode())
                         {
-                            m_aManipulator->Transform(currPos.x, currPos.y, m_occView->v3dView()); // ??????
+                            m_aManipulator->Transform(currPos.x, currPos.y, m_occView->v3dView()); // 应用鼠标从起始位置开始移动而产生的变换
 
 
                             static auto lastTime = std::chrono::high_resolution_clock::now();
@@ -966,7 +960,7 @@ namespace Mayo {
                                 if (m_aManipulator->HasTransformation())
                                 {
                                     gp_Pnt currentPosition = m_aManipulator->Position().Location();
-                                    // ???
+                                    // 获取平移值
                                     gp_Vec displacement(m_initialPosition, currentPosition);
                                     std::cout << "Translation: ("
                                         << displacement.X() << ", "
@@ -977,11 +971,11 @@ namespace Mayo {
                                     m_posTransform.SetY(displacement.Y() * 1000);
                                     m_posTransform.SetZ(displacement.Z() * 1000);
 
-                                    // ???? ShowTransformTrajectory ????
-                                    // ????
+                                    // 新增：平移模式下：给 ShowTransformTrajectory 传入“当前激活轴”的方向
+                                    // 取操纵器当前坐标系（世界坐标下）
                                     const gp_Ax2 manipAx2 = m_aManipulator->Position();
 
-                                    //  ActiveAxisIndex ????
+                                    // 根据 ActiveAxisIndex 取对应方向（世界坐标下的单位方向）
                                     gp_Dir axisDir;
                                     if (tmpActiveAxisIndex == 0) {
                                         axisDir = manipAx2.XDirection();       // X
@@ -990,19 +984,16 @@ namespace Mayo {
                                         axisDir = manipAx2.YDirection();       // Y
                                     }
                                     else { // tmpActiveAxisIndex == 2
-                                        axisDir = manipAx2.Direction();        // Zgp_Ax2::Direction() 
+                                        axisDir = manipAx2.Direction();        // Z（gp_Ax2::Direction() 是主方向）
                                     }
 
-                                    // ===== ??????? anchor =====
                                     if ((event->buttons() & Qt::LeftButton) != 0
                                         && AIS_MM_Translation == tmpActiveAxisMode
                                         && tmpActiveAxisIndex >= 0 && tmpActiveAxisIndex <= 2)
                                     {
-                                        // ??????????
+                                 
                                         if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
-                                            // ?anchor ???
-                                            //  press ? m_initialPosition/?
-                                            // ? m_initialPosition ??
+
                                             m_translateAbsAnchorWorld = m_initialPosition;
 
                                             m_translateAbsAxisWorld = axisDir;
@@ -1012,11 +1003,8 @@ namespace Mayo {
                                     }
                                     // =========================================================================
 
-
-                                    // ?? distance label
                                     m_distanceAxisIndex = tmpActiveAxisIndex;
 
-                                    // /? anchor0
                                     gp_Pnt startPoint = m_hasTranslateAbsAnchor ? m_translateAbsAnchorWorld : m_initialPosition;
                                     gp_Dir drawAxisDir = m_hasTranslateAbsAnchor ? m_translateAbsAxisWorld : axisDir;
 
@@ -1033,7 +1021,7 @@ namespace Mayo {
 
 
                                 gp_Quaternion deltaRotation = currentRotation.GetRotation() * m_initialRotation.GetRotation().Inverted();
-                                //if (deltaRotation.W() < 0) deltaRotation = -deltaRotation; // ??? w > 0 ??
+                                //if (deltaRotation.W() < 0) deltaRotation = -deltaRotation; // 统一为 w > 0 的表示
                                 static Standard_Real lastAngle = 0.0;
                                 gp_Vec axis;
                                 Standard_Real angle;
@@ -1044,43 +1032,39 @@ namespace Mayo {
                                 qInfo() << "deltaRotation.W(): " << deltaRotation.W();
 
 
-                                // 1. ????
+                                // 1. 获取局部坐标系和旋转轴
                                 gp_Ax2 localAxes = m_aManipulator->Position();
                                 gp_Dir rotationAxis;
                                 gp_Dir initialDir;
                                 if (tmpActiveAxisIndex == 0)
                                 {
-                                    rotationAxis = localAxes.XDirection(); // ??
-                                    initialDir = localAxes.YDirection();  // ?
+                                    rotationAxis = localAxes.XDirection(); // 当前旋转轴
+                                    initialDir = localAxes.YDirection();  // 初始参考方向
                                 }
                                 else if (tmpActiveAxisIndex == 1)
                                 {
-                                    rotationAxis = localAxes.YDirection(); // ??
-                                    initialDir = localAxes.Direction();  // ?
+                                    rotationAxis = localAxes.YDirection(); // 当前旋转轴
+                                    initialDir = localAxes.Direction();  // 初始参考方向
                                 }
                                 else if (tmpActiveAxisIndex == 2)
                                 {
-                                    rotationAxis = localAxes.Direction(); // ??
-                                    initialDir = localAxes.XDirection();  // ?
+                                    rotationAxis = localAxes.Direction(); // 当前旋转轴
+                                    initialDir = localAxes.XDirection();  // 初始参考方向
                                 }
 
                                 m_posTransform.SetX(axis.X());
                                 m_posTransform.SetY(axis.Y());
                                 m_posTransform.SetZ(angle * 180.0 / M_PI);
 
-                                // 1) ???
+                                // 1) 当前操纵器选中的旋转轴
                                 gp_Vec axisRotation;
 
-                                // 2) deltaRotation ??? axis/angle
+                                // 2) deltaRotation 轴角分解得到的 axis / angle
                                 gp_Vec deltaAxis = axis;
                                 if (deltaAxis.Magnitude() > 1e-12) {
                                     deltaAxis.Normalize();
                                 }
 
-
-
-
-                                //  intended axisRotation
 
                                 const gp_Ax2 ax2 = m_aManipulator->Position();
 
@@ -1090,30 +1074,24 @@ namespace Mayo {
 
                                 axisRotation.Normalize();
 
-                                //  deltaRotation ? w ?????
-
                                 if (deltaRotation.W() < 0.0) deltaRotation = -deltaRotation;
 
                                 gp_Vec qAxis;
                                 Standard_Real qAngle = 0.0;
                                 deltaRotation.GetVectorAndAngle(qAxis, qAngle);
 
-                                // qAxis  axisRotation ???/??
                                 double signedAngle = (qAxis.Dot(axisRotation) < 0.0) ? -qAngle : qAngle;
 
-                                // ===== ?/?pivot=====
                                 if (!m_hasRotateAbsAnchor || m_rotateAbsAxisIndex != tmpActiveAxisIndex) {
                                     m_rotateAbsAnchorWorld = m_aManipulator->Position().Location();
                                     m_rotateAbsAxisWorld = gp_Dir(axisRotation);
                                     m_rotateAbsAxisIndex = tmpActiveAxisIndex;
                                     m_hasRotateAbsAnchor = true;
-                                    m_rotateAbsAngleRad = 0.0; // ???
+                                    m_rotateAbsAngleRad = 0.0; 
                                 }
 
-                                // ??????
                                 m_rotateAbsAngleRad = signedAngle;
 
-                                // ???? frozen ???
                                 const gp_Ax1 drawAxis(m_rotateAbsAnchorWorld, m_rotateAbsAxisWorld);
                                 ShowRotationTrajectory(m_context, drawAxis, 0.0, signedAngle);
 
@@ -1171,24 +1149,23 @@ namespace Mayo {
                 const Handle(AIS_InteractiveObject)& selected = m_context->SelectedInteractive();
 
 
-                // ???
+               // 处理距离文本（平移）输入框
                 if (selected == m_translateDim) {
-
+                    // 例如 "12.345 mm"
                     //QString currentText = QString::fromUtf16(m_label->Text().ToExtString());
 
-                    // ????? label ?
                     const double oldDistanceMm = m_translateDimValueMm;
                     const QString numberPart = QString::number(oldDistanceMm, 'f', 3);
 
-                    QWidget* parentWidget = m_occView->widget()->parentWidget();  // ? WidgetGuiDocument
+                    QWidget* parentWidget = m_occView->widget()->parentWidget();  // 通常是 WidgetGuiDocument
 
                     if (!m_editLine) {
-                        m_editLine = new QLineEdit(parentWidget);
+                        m_editLine = new QLineEdit(parentWidget); // 覆盖在 viewer 上
 
 
                         m_editLine->setStyleSheet("background: white; color: black; border: 1px solid red;");
                         m_editLine->setAlignment(Qt::AlignCenter);
-                        // -1, 0, 12.3, 4.56 
+                        
                         m_editLine->setValidator(new QRegularExpressionValidator(
                             QRegularExpression("^-?(0|([1-9][0-9]*))(\\.[0-9]+)?$"),
                             m_editLine
@@ -1197,53 +1174,34 @@ namespace Mayo {
                         m_editLine->setFrame(true);
                         m_editLine->hide();
 
-                        //// ---------- 1.  label ?? a ----------
-                        //// currentText ? "12.345 mm"
-                        //QStringList qlist = currentText.split(' ', Qt::SkipEmptyParts);
-                        //QString numberPart = currentText;
-                        //if (!qlist.isEmpty()) {
-                        //    // ? token ?
-                        //    numberPart = qlist[0];
-                        //}
-
-                        //bool okOld = false;
-                        //double oldDistanceMm = numberPart.toDouble(&okOld);
-                        //if (!okOld) {
-                        //    oldDistanceMm = 0.0;
-                        //}
-
-                        //// ?? a
+                        // 输入框显示当前的总位移 a
                         m_editLine->setText(numberPart);
 
-
-                        // ---------- 2.  m_label  3D ??? ----------
+                        // ---------- 2. 把 m_label 的 3D 位置投影到屏幕坐标 ----------
                         Standard_Integer vx = 0, vy = 0;
 
-                        // m_label  3D 
-                        /*const gp_Pnt labelPnt = m_label->Position();*/
 
                         gp_Pnt labelPnt = m_aManipulator->Position().Location();
                         if (m_hasTranslateDimTextPosWorld) {
                             labelPnt = m_translateDimTextPosWorld;
                         }
 
-
-                        // OCCT ?? -> ?
+                        // OCCT 投影：世界坐标 -> 视口像素坐标
                         m_occView->v3dView()->Convert(labelPnt.X(), labelPnt.Y(), labelPnt.Z(), vx, vy);
 
-                        // Convert  OCC ????/???
-                        // Mayo/OCCT ??? Qt widget ????
-                        // ? Y ??? vy = viewHeight - vy
+                        // Convert 给的是 OCC 视图坐标（通常原点在左上/左下取决于实现）
+                        // Mayo/OCCT 里一般可以直接当作 Qt widget 的局部坐标使用；
+                        // 若你发现 Y 方向上下颠倒，再做一次 vy = viewHeight - vy
 
                         QWidget* viewWidget = m_occView->widget();
                         QWidget* parentWidget = viewWidget->parentWidget();
 
-                        // ?? -> ? -> parentWidget ?
+                        // 视图局部坐标 -> 全局 -> parentWidget 局部
                         QPoint viewLocalPos(vx, vy);
                         QPoint globalPos = viewWidget->mapToGlobal(viewLocalPos);
                         QPoint localPos = parentWidget->mapFromGlobal(globalPos);
 
-                        // ???????
+                        // 让输入框居中贴近文字（微调偏移可按需要改）
                         localPos -= QPoint(m_editLine->width() / 2, m_editLine->height() / 2);
                         localPos += QPoint(0, -10);
 
@@ -1256,7 +1214,6 @@ namespace Mayo {
                         m_editLine->setFocus();
 
 
-                        // ? anchor connect ??
                         if (m_aManipulator.IsNull()) {
                             delete m_editLine;
                             m_editLine = nullptr;
@@ -1266,7 +1223,7 @@ namespace Mayo {
                         const gp_Ax2 curAx2AtPopup = m_aManipulator->Position();
                         const gp_Pnt curLocAtPopup = curAx2AtPopup.Location();
 
-                        //  m_distanceAxisIndex ActiveAxisIndex
+                        // 冻结轴索引：优先用 m_distanceAxisIndex，否则用 ActiveAxisIndex
                         int axisIndexFrozen = m_distanceAxisIndex;
                         if (axisIndexFrozen < 0 || axisIndexFrozen > 2) {
                             axisIndexFrozen = m_aManipulator->ActiveAxisIndex();
@@ -1277,18 +1234,18 @@ namespace Mayo {
                             return;
                         }
 
-                        // ?
+                        // 冻结轴方向
                         gp_Dir axisDirFrozen =
                             (axisIndexFrozen == 0) ? curAx2AtPopup.XDirection() :
                             (axisIndexFrozen == 1) ? curAx2AtPopup.YDirection() :
                             curAx2AtPopup.Direction(); // Z
 
-                        // ? + ?? a? anchoranchor = currentLoc - axisDir * a
+                        // 用“当前位置 + 旧绝对距离 a”反推绝对起点 anchor：anchor = currentLoc - axisDir * a
                         gp_Pnt anchorFrozen = curLocAtPopup.Translated(gp_Vec(axisDirFrozen) * (-oldDistanceMm));
 
 
 
-                        // ---------- 3. editingFinished?? b? (b - a) ----------
+                        // ---------- 3. editingFinished：把“绝对距离 b”转成增量 (b - a) ----------
                         connect(
                             m_editLine,
                             &QLineEdit::editingFinished,
