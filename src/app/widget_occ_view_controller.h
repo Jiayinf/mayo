@@ -25,6 +25,10 @@
 #include <QLineEdit>
 #include <QWidget>
 
+#include <PrsDim_LengthDimension.hxx>
+#include <PrsDim_AngleDimension.hxx>   // 【新增】旋转角度标注
+#include <gp_Pnt.hxx>
+
 
 class QCursor;
 class QKeyEvent;
@@ -162,6 +166,12 @@ namespace Mayo {
         Handle(AIS_TextLabel) m_rolabel = nullptr;
         // 平移距离尺寸标注（独立于轨迹线的标注辅助线+箭头+文字）
         Handle(PrsDim_LengthDimension) m_translateDim = nullptr;
+
+        // 旋转显示：两条参考线 + 角度标注（OCC）
+        Handle(AIS_Shape) m_rotLineBefore;                  // 旋转前参考线
+        Handle(AIS_Shape) m_rotLineAfter;                   // 旋转后参考线
+        Handle(PrsDim_AngleDimension) m_rotAngleDim;        // 角度标注
+
 
         // 缓存当前平移距离（用于双击标注时预填输入框）
         double m_translateDimValueMm = 0.0;

@@ -36,6 +36,8 @@
 #include <gp_GTrsf.hxx>
 #include <math_SVD.hxx>
 
+#include <PrsDim_AngleDimension.hxx>
+#include <Prs3d_DimensionAspect.hxx>
 
 
 //#include "SoFCCSysDragger.h"
@@ -272,6 +274,20 @@ namespace Mayo {
             m_translateDim.Nullify();
         }
 
+        // 【新增】清理 OCC 旋转角度标注与两条线
+        if (!m_rotLineBefore.IsNull()) {
+            ctx->Remove(m_rotLineBefore, Standard_False);
+            m_rotLineBefore.Nullify();
+        }
+        if (!m_rotLineAfter.IsNull()) {
+            ctx->Remove(m_rotLineAfter, Standard_False);
+            m_rotLineAfter.Nullify();
+        }
+        if (!m_rotAngleDim.IsNull()) {
+            ctx->Remove(m_rotAngleDim, Standard_False);
+            m_rotAngleDim.Nullify();
+        }
+
         if (!m_label.IsNull()) {
             ctx->Remove(m_label, Standard_False); // 移除旧轨迹的文字
             m_label.Nullify();
@@ -317,111 +333,84 @@ namespace Mayo {
         // ==========================================================
 
 
-        // 创建圆弧轨迹
-        Handle(Geom_Circle) trajectoryCircle = new Geom_Circle(gp_Ax2(rotationAxis.Location(), rotationAxis.Direction()),
-            0.4 * rotationAxis.Location().Distance(m_occView->v3dView().get()->Camera()->Eye()));
+// ==========================================================
+// 新方案：两条线（旋转前/旋转后） + OCC 角度标注（PrsDim_AngleDimension）
+// ==========================================================
 
-        Handle(Geom_TrimmedCurve) trajectoryArc = new Geom_TrimmedCurve(trajectoryCircle, startAngle, endAngle);
+        const gp_Pnt center = rotationAxis.Location();
+        const gp_Dir axisDir = rotationAxis.Direction();
 
-        // 获取起始点和终点位置
-        gp_Pnt startPoint = trajectoryArc->Value(startAngle);
-        gp_Pnt endPoint = trajectoryArc->Value(endAngle);
+        // 线段长度：沿用你之前按相机距离取的尺度（防止太短看不见）
+        Standard_Real lineLen = 0.4 * center.Distance(m_occView->v3dView().get()->Camera()->Eye());
+        lineLen = std::max<Standard_Real>(lineLen, 50.0); // 给个下限，避免相机很近时太短
 
-        // 计算起点箭头方向
-        gp_Vec dirStart = gp_Vec(trajectoryArc->Value(startAngle + 0.01), trajectoryArc->Value(startAngle));
-        // 计算终点箭头方向（方向要反）
-        gp_Vec dirEnd = gp_Vec(trajectoryArc->Value(endAngle - 0.01), trajectoryArc->Value(endAngle));
-
-        if (endAngle < 0) {
-            endAngle = 2 * M_PI + endAngle;
-            trajectoryArc = new Geom_TrimmedCurve(trajectoryCircle, endAngle, startAngle);
-            startPoint = trajectoryArc->Value(endAngle);
-            endPoint = trajectoryArc->Value(startAngle);
-            dirStart = gp_Vec(trajectoryArc->Value(endAngle + 0.01), trajectoryArc->Value(endAngle));
-            dirEnd = gp_Vec(trajectoryArc->Value(startAngle - 0.01), trajectoryArc->Value(startAngle));
+        // 选一个与旋转轴垂直的参考方向 refVec（保证两条线在同一平面内，角度标注稳定）
+        gp_Vec refVec = gp_Vec(axisDir).Crossed(gp_Vec(0, 0, 1));
+        if (refVec.SquareMagnitude() < 1e-12) {
+            refVec = gp_Vec(axisDir).Crossed(gp_Vec(1, 0, 0));
         }
+        refVec.Normalize();
 
-        BRepBuilderAPI_MakeEdge edgeMaker(trajectoryArc);
+        // v0 是“未旋转”的参考向量
+        gp_Vec v0 = refVec * lineLen;
 
-        // 创建显示对象
-        m_trajectoryShape = new AIS_Shape(edgeMaker.Edge());
+        // 旋转前/后的向量（围绕 rotationAxis 旋转）
+        gp_Vec vBefore = v0;
+        vBefore.Rotate(rotationAxis, startAngle);
 
-        // 设置显示属性
+        gp_Vec vAfter = v0;
+        vAfter.Rotate(rotationAxis, endAngle);
 
-        m_trajectoryShape->SetColor(trajColor);
+        // 两条线的端点
+        const gp_Pnt pBefore = center.Translated(vBefore);
+        const gp_Pnt pAfter = center.Translated(vAfter);
 
-        m_trajectoryShape->SetWidth(5);
+        // 做两条边（共享同一个顶点 center）
+        TopoDS_Edge edgeBefore = BRepBuilderAPI_MakeEdge(center, pBefore);
+        TopoDS_Edge edgeAfter = BRepBuilderAPI_MakeEdge(center, pAfter);
 
-        m_trajectoryShape->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        ctx->SetDisplayPriority(m_trajectoryShape, 10);
+        // 旋转前的线（建议黑色/灰色）
+        m_rotLineBefore = new AIS_Shape(edgeBefore);
+        m_rotLineBefore->SetColor(Quantity_NOC_BLACK);
+        m_rotLineBefore->SetWidth(2.0);
+        m_rotLineBefore->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(m_rotLineBefore, 10);
+        ctx->Display(m_rotLineBefore, Standard_False);
 
-        // 显示轨迹
-        ctx->Display(m_trajectoryShape, Standard_False);
+        // 旋转后的线（建议用轴颜色 trajColor，和你当前逻辑一致）
+        m_rotLineAfter = new AIS_Shape(edgeAfter);
+        m_rotLineAfter->SetColor(trajColor);
+        m_rotLineAfter->SetWidth(2.0);
+        m_rotLineAfter->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(m_rotLineAfter, 11);
+        ctx->Display(m_rotLineAfter, Standard_False);
 
-        // 箭头参数
-        Standard_Real arrowLength = 24.0;
-        Standard_Real arrowRadius = 8.0;
+        // 角度标注（类似你示例：PrsDim_AngleDimension(edge1, edge2)）
+        m_rotAngleDim = new PrsDim_AngleDimension(edgeBefore, edgeAfter);
 
-        dirStart.Normalize();
-        gp_Ax2 startAx2(startPoint, gp_Dir(dirStart));
-        TopoDS_Shape coneStart = BRepPrimAPI_MakeCone(startAx2, arrowRadius, 0.0, arrowLength);
+        Handle(Prs3d_DimensionAspect) dimensionAspect = new Prs3d_DimensionAspect();
+        dimensionAspect->MakeArrows3d(Standard_False);
+        dimensionAspect->MakeText3d(Standard_False);          // false：用 2D 文本显示
+        dimensionAspect->TextAspect()->SetHeight(20.0);
+        dimensionAspect->MakeTextShaded(true);
+        dimensionAspect->SetCommonColor(Quantity_NOC_RED);    // 角度标注红色（可改）
+        dimensionAspect->MakeUnitsDisplayed(false);
 
-        dirEnd.Normalize();
-        gp_Ax2 endAx2(endPoint, gp_Dir(dirEnd));
-        TopoDS_Shape coneEnd = BRepPrimAPI_MakeCone(endAx2, arrowRadius, 0.0, arrowLength);
+        m_rotAngleDim->SetDisplayUnits("deg");
+        m_rotAngleDim->SetDimensionAspect(dimensionAspect);
 
+        m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(m_rotAngleDim, 12);
+        ctx->Display(m_rotAngleDim, Standard_False);
 
-        // 转为 AIS_Shape 显示
-        arrowEnd = new AIS_Shape(coneEnd);
-        arrowEnd->SetDisplayMode(AIS_Shaded);
-        arrowEnd->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowEnd->SetColor(trajColor);
-
-        arrowEnd->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        ctx->SetDisplayPriority(arrowEnd, 11);
-        ctx->Display(arrowEnd, false);
-
-        arrowStart = new AIS_Shape(coneStart);
-        arrowStart->SetDisplayMode(AIS_Shaded);
-        arrowStart->SetMaterial(Graphic3d_NOM_PLASTIC);
-        arrowStart->SetColor(trajColor);
-
-        arrowStart->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        ctx->SetDisplayPriority(arrowStart, 11);
-        ctx->Display(arrowStart, false);
-
-
-        // 计算圆弧的相关信息
-        gp_Pnt circleCenter = trajectoryCircle->Location(); // 圆心位置
-        Standard_Real middleAngle = (startAngle + tempAngle) / 2.0; // 计算中间角度
-        Standard_Real radius = trajectoryCircle->Radius(); // 圆的半径
-
-        // 获取圆弧所在平面的坐标系
-        gp_Ax2 axis = trajectoryCircle->Position();
-        gp_Dir xDir = axis.XDirection();
-        gp_Dir yDir = axis.YDirection();
-
-        // 计算中间点在圆弧上的位置
-        gp_Vec xVec(xDir);
-        gp_Vec yVec(yDir);
-        xVec *= radius * cos(middleAngle);
-        yVec *= radius * sin(middleAngle);
-
-        gp_Pnt middlePoint = circleCenter.Translated(xVec + yVec);
-
-        // 在终点显示偏移角度
-        Standard_Real distance = (tempAngle - startAngle) * 180.0 / M_PI;
-
-        m_rolabel = new AIS_TextLabel();
-        m_rolabel->SetText(TCollection_ExtendedString(std::to_string(distance).c_str()));
-        m_rolabel->SetColor(trajColor); // ??
-        m_rolabel->SetPosition(middlePoint.XYZ());
+        ctx->UpdateCurrentViewer();
 
 
-        // 关键：放到最顶层
-        m_rolabel->SetZLayer(Graphic3d_ZLayerId_Topmost);
 
-        ctx->Display(m_rolabel, Standard_False);
+        //// 关键：放到最顶层
+        //m_rolabel->SetZLayer(Graphic3d_ZLayerId_Topmost);
+
+        //ctx->Display(m_rolabel, Standard_False);
 
 
     }
@@ -1008,6 +997,11 @@ namespace Mayo {
 
                                     gp_Pnt startPoint = m_hasTranslateAbsAnchor ? m_translateAbsAnchorWorld : m_initialPosition;
                                     gp_Dir drawAxisDir = m_hasTranslateAbsAnchor ? m_translateAbsAxisWorld : axisDir;
+
+                                    // 将当前点投影到“起点 + 轴向”的直线上，保证轨迹始终沿轴显示
+                                    const gp_Vec vStartToCur(startPoint, currentPosition);
+                                    const Standard_Real t = vStartToCur.Dot(gp_Vec(drawAxisDir)); // 轴向标量距离（可正可负）
+                                    const gp_Pnt endOnAxis = startPoint.Translated(gp_Vec(drawAxisDir) * t);
 
                                     const gp_Ax1 axis1(startPoint, drawAxisDir);
                                     ShowTransformTrajectory(m_context, axis1, startPoint, currentPosition);
