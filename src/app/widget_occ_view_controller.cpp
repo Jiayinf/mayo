@@ -308,6 +308,21 @@ namespace Mayo {
             arrowEnd.Nullify();
         }
 
+        // 【新增】清理 OCC 角度标注版本的两条线与角度标注
+        if (!m_rotLineBefore.IsNull()) {
+            ctx->Remove(m_rotLineBefore, Standard_False);
+            m_rotLineBefore.Nullify();
+        }
+        if (!m_rotLineAfter.IsNull()) {
+            ctx->Remove(m_rotLineAfter, Standard_False);
+            m_rotLineAfter.Nullify();
+        }
+        if (!m_rotAngleDim.IsNull()) {
+            ctx->Remove(m_rotAngleDim, Standard_False);
+            m_rotAngleDim.Nullify();
+        }
+
+
         if (std::abs(endAngle - startAngle) <= 1e-6) {
             ctx->UpdateCurrentViewer(); // 确保 Remove 立即刷新显示
             return;
@@ -341,8 +356,10 @@ namespace Mayo {
         const gp_Dir axisDir = rotationAxis.Direction();
 
         // 线段长度：沿用你之前按相机距离取的尺度（防止太短看不见）
+
+        Standard_Real viewDist = 200.0;
         Standard_Real lineLen = 0.4 * center.Distance(m_occView->v3dView().get()->Camera()->Eye());
-        lineLen = std::max<Standard_Real>(lineLen, 50.0); // 给个下限，避免相机很近时太短
+        lineLen = std::max<Standard_Real>(0.35 * viewDist, 80.0); // 给个下限，避免相机很近时太短
 
         // 选一个与旋转轴垂直的参考方向 refVec（保证两条线在同一平面内，角度标注稳定）
         gp_Vec refVec = gp_Vec(axisDir).Crossed(gp_Vec(0, 0, 1));
@@ -388,29 +405,39 @@ namespace Mayo {
         // 角度标注（类似你示例：PrsDim_AngleDimension(edge1, edge2)）
         m_rotAngleDim = new PrsDim_AngleDimension(edgeBefore, edgeAfter);
 
+        const Standard_Real flyout = lineLen * 0.75;
+        m_rotAngleDim->SetFlyout(flyout);
+
         Handle(Prs3d_DimensionAspect) dimensionAspect = new Prs3d_DimensionAspect();
         dimensionAspect->MakeArrows3d(Standard_False);
         dimensionAspect->MakeText3d(Standard_False);          // false：用 2D 文本显示
         dimensionAspect->TextAspect()->SetHeight(20.0);
         dimensionAspect->MakeTextShaded(true);
-        dimensionAspect->SetCommonColor(Quantity_NOC_RED);    // 角度标注红色（可改）
+        dimensionAspect->SetCommonColor(Quantity_NOC_BLACK);    // 角度标注黑色
         dimensionAspect->MakeUnitsDisplayed(false);
 
         m_rotAngleDim->SetDisplayUnits("deg");
         m_rotAngleDim->SetDimensionAspect(dimensionAspect);
+
+        // 【新增】用你自己的 startAngle/endAngle 计算带符号的角度（弧度），并覆盖显示值
+        auto normToPi = [](double a) {
+            while (a > M_PI) a -= 2.0 * M_PI;
+            while (a < -M_PI) a += 2.0 * M_PI;
+            return a;
+        };
+
+        double signedAngleRad = normToPi(endAngle - startAngle);
+        // 避免 -0.00
+        if (std::abs(signedAngleRad) < 1e-10) signedAngleRad = 0.0;
+
+        // SetCustomValue(Real) 以“模型单位”存储，显示时仍会按 SetDisplayUnits("deg") 做单位转换
+        m_rotAngleDim->SetCustomValue(signedAngleRad);  // 负值会显示为负角度 :contentReference[oaicite:2]{index=2}
 
         m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(m_rotAngleDim, 12);
         ctx->Display(m_rotAngleDim, Standard_False);
 
         ctx->UpdateCurrentViewer();
-
-
-
-        //// 关键：放到最顶层
-        //m_rolabel->SetZLayer(Graphic3d_ZLayerId_Topmost);
-
-        //ctx->Display(m_rolabel, Standard_False);
 
 
     }
