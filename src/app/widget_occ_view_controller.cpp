@@ -405,26 +405,52 @@ namespace Mayo {
         // 角度标注（类似你示例：PrsDim_AngleDimension(edge1, edge2)）
         m_rotAngleDim = new PrsDim_AngleDimension(edgeBefore, edgeAfter);
 
-        const Standard_Real flyout = lineLen * 0.75;
-        m_rotAngleDim->SetFlyout(flyout);
-
         Handle(Prs3d_DimensionAspect) dimensionAspect = new Prs3d_DimensionAspect();
         dimensionAspect->MakeArrows3d(Standard_False);
         dimensionAspect->MakeText3d(Standard_False);          // false：用 2D 文本显示
         dimensionAspect->TextAspect()->SetHeight(20.0);
         dimensionAspect->MakeTextShaded(true);
-        dimensionAspect->SetCommonColor(Quantity_NOC_BLACK);    // 角度标注黑色
+        
+        // 颜色：圆弧 + 文字 跟随旋转轴颜色（与 m_rotLineAfter 一致）
+        dimensionAspect->SetCommonColor(trajColor);
+
         dimensionAspect->MakeUnitsDisplayed(false);
 
         m_rotAngleDim->SetDisplayUnits("deg");
         m_rotAngleDim->SetDimensionAspect(dimensionAspect);
 
-        // 【新增】用你自己的 startAngle/endAngle 计算带符号的角度（弧度），并覆盖显示值
+        // -----------------------------
+        // 1) 让“标注圆弧”比默认更大一点（Flyout 越大，圆弧半径越大）
+        // -----------------------------
+        const Standard_Real flyout = lineLen * 1.8;   // 你现在没设flyout；0.80~0.95 都可微调
+        m_rotAngleDim->SetFlyout(flyout);
+
+
+        // -----------------------------
+        // 2) 让数字在圆弧“里面”（圆弧在数字外侧）
+        //    做法：把文字放到角平分线方向，并且半径 < flyout
+        // -----------------------------
         auto normToPi = [](double a) {
             while (a > M_PI) a -= 2.0 * M_PI;
             while (a < -M_PI) a += 2.0 * M_PI;
             return a;
         };
+
+
+        // 角平分线方向（midAngle）
+        const double delta = normToPi(endAngle - startAngle);
+        const double midAngle = startAngle + 0.5 * delta;
+
+        gp_Vec vMid = v0;
+        vMid.Rotate(rotationAxis, midAngle);
+        if (vMid.SquareMagnitude() > 1e-12) {
+            vMid.Normalize();
+        }
+
+        // textRadius 要小于 flyout：这样圆弧在数字外面
+        const Standard_Real textRadius = flyout * 0.72;   // 0.65~0.80 可调：越小越靠内
+        gp_Pnt textPos = center.Translated(vMid * textRadius);
+
 
         double signedAngleRad = normToPi(endAngle - startAngle);
         // 避免 -0.00
@@ -433,12 +459,13 @@ namespace Mayo {
         // SetCustomValue(Real) 以“模型单位”存储，显示时仍会按 SetDisplayUnits("deg") 做单位转换
         m_rotAngleDim->SetCustomValue(signedAngleRad);  // 负值会显示为负角度 :contentReference[oaicite:2]{index=2}
 
+        m_rotAngleDim->SetTextPosition(textPos);
+
         m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->SetDisplayPriority(m_rotAngleDim, 12);
         ctx->Display(m_rotAngleDim, Standard_False);
 
         ctx->UpdateCurrentViewer();
-
 
     }
 
