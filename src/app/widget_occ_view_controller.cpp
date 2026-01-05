@@ -935,12 +935,19 @@ namespace Mayo {
                         ax2.Direction();
 
 
-                    if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
-                        m_translateAbsAnchorWorld = ax2.Location();   
-                        m_translateAbsAxisWorld = axisDir;
-                        m_translateAbsAxisIndex = tmpActiveAxisIndex;
-                        m_hasTranslateAbsAnchor = true;
-                    }
+                    //if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
+                    //    m_translateAbsAnchorWorld = ax2.Location();   
+                    //    m_translateAbsAxisWorld = axisDir;
+                    //    m_translateAbsAxisIndex = tmpActiveAxisIndex;
+                    //    m_hasTranslateAbsAnchor = true;
+                    //}
+
+                    m_rotateAbsAnchorWorld = ax2.Location();
+                    m_rotateAbsAxisWorld = axisDir;
+                    m_rotateAbsAxisIndex = tmpActiveAxisIndex;
+                    m_hasRotateAbsAnchor = true;
+                    m_rotateAbsAngleRad = 0.0;
+
                 }
                 // ======================================================================
 
@@ -1168,18 +1175,37 @@ namespace Mayo {
 
                                 double signedAngle = (qAxis.Dot(axisRotation) < 0.0) ? -qAngle : qAngle;
 
-                                if (!m_hasRotateAbsAnchor || m_rotateAbsAxisIndex != tmpActiveAxisIndex) {
-                                    m_rotateAbsAnchorWorld = m_aManipulator->Position().Location();
-                                    m_rotateAbsAxisWorld = gp_Dir(axisRotation);
+                                // 【改】冻结/刷新 pivot：除了 axisIndex 变化，还要检测“操纵器位置是否变了”
+                                const gp_Pnt curLoc = m_aManipulator->Position().Location();
+                                const gp_Dir curAxisDir(axisRotation);
+
+                                // 位置阈值：按你的单位精度可微调（这里用 1e-6 够用）
+                                const bool pivotMoved = m_hasRotateAbsAnchor
+                                    ? (curLoc.Distance(m_rotateAbsAnchorWorld) > 1e-6)
+                                    : true;
+
+                                // 轴向阈值：dot 接近 1 表示方向一致
+                                const bool axisChanged = m_hasRotateAbsAnchor
+                                    ? (std::abs(curAxisDir.Dot(m_rotateAbsAxisWorld)) < 0.9999)
+                                    : true;
+
+                                if (!m_hasRotateAbsAnchor
+                                    || m_rotateAbsAxisIndex != tmpActiveAxisIndex
+                                    || pivotMoved
+                                    || axisChanged)
+                                {
+                                    m_rotateAbsAnchorWorld = curLoc;
+                                    m_rotateAbsAxisWorld = curAxisDir;
                                     m_rotateAbsAxisIndex = tmpActiveAxisIndex;
                                     m_hasRotateAbsAnchor = true;
-                                    m_rotateAbsAngleRad = 0.0; 
+                                    m_rotateAbsAngleRad = 0.0;
                                 }
 
                                 m_rotateAbsAngleRad = signedAngle;
 
                                 const gp_Ax1 drawAxis(m_rotateAbsAnchorWorld, m_rotateAbsAxisWorld);
                                 ShowRotationTrajectory(m_context, drawAxis, 0.0, signedAngle);
+
 
 
 
