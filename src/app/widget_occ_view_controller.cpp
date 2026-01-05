@@ -518,6 +518,41 @@ namespace Mayo {
             arrowEnd.Nullify();
         }
 
+        if (!m_translateDim.IsNull()) {
+            ctx->Remove(m_translateDim, Standard_False);
+            m_translateDim.Nullify();
+        }
+
+        if (!m_rolabel.IsNull()) {
+            ctx->Remove(m_rolabel, Standard_False);
+            m_rolabel.Nullify();
+        }
+
+        if (!arrowStart.IsNull()) {
+            ctx->Remove(arrowStart, Standard_False);
+            arrowStart.Nullify();
+        }
+
+        if (!arrowEnd.IsNull()) {
+            ctx->Remove(arrowEnd, Standard_False);
+            arrowEnd.Nullify();
+        }
+
+        // 【新增】开始平移轨迹时，必须清理旋转辅助线与角度标注
+        if (!m_rotLineBefore.IsNull()) {
+            ctx->Remove(m_rotLineBefore, Standard_False);
+            m_rotLineBefore.Nullify();
+        }
+        if (!m_rotLineAfter.IsNull()) {
+            ctx->Remove(m_rotLineAfter, Standard_False);
+            m_rotLineAfter.Nullify();
+        }
+        if (!m_rotAngleDim.IsNull()) {
+            ctx->Remove(m_rotAngleDim, Standard_False);
+            m_rotAngleDim.Nullify();
+        }
+
+
         // 创建直线几何
         if (endPoint.IsEqual(startPoint, 1e-6)) {
             ctx->UpdateCurrentViewer(); // 确保 Remove 立即刷新显示
@@ -950,6 +985,8 @@ namespace Mayo {
                     {
                         m_aManipulator->SetPosition(tmpAx21);
                     }
+
+
 
                     m_aManipulator->StartTransform(currPos.x(), currPos.y(), m_occView->v3dView());	// 初始化转换，记录起始位置
                 }
