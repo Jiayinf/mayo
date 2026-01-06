@@ -250,6 +250,13 @@ namespace Mayo {
 
 
 
+        // 旋转角度数字在视口中的像素坐标（用于点击数字弹出输入框）
+        QPoint m_rotAngleTextVpPos;
+        bool   m_hasRotAngleTextVpPos = false;
+
+
+
+
 
     };
 
