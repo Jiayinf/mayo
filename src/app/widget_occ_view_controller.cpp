@@ -449,14 +449,6 @@ namespace Mayo {
         m_rotAngleDim->SetCustomValue(TCollection_ExtendedString(""));
         m_rotAngleDim->SetTextPosition(textPos);
 
-        // 【新增】缓存角度数字位置（屏幕像素），用于点击数字弹输入框
-        m_hasRotAngleTextVpPos = false;
-        if (m_occView != nullptr && !m_occView->v3dView().IsNull()) {
-            Standard_Integer vx = 0, vy = 0;
-            m_occView->v3dView()->Convert(textPos.X(), textPos.Y(), textPos.Z(), vx, vy);
-            m_rotAngleTextVpPos = QPoint(vx, vy);
-            m_hasRotAngleTextVpPos = true;
-        }
         m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
         /*ctx->SetDisplayPriority(m_rotAngleDim, 12);*/
         ctx->Display(m_rotAngleDim, Standard_False);
@@ -465,6 +457,7 @@ namespace Mayo {
         // 【新增】用 AIS_TextLabel 显示“角度数值”，并作为可点击入口（恢复你原先可用的交互方式）
         // 注意：文本必须是纯数字（不要加 "deg"），否则你 editingFinished 里 toDouble 会失败
         // -------------------------------------------------------
+        
         {
             const double signedAngleDeg = signedAngleRad * 180.0 / M_PI;
             QString angleText = QString::number(signedAngleDeg, 'f', 3); // 精度按需调
@@ -1102,12 +1095,14 @@ namespace Mayo {
                                  
                                         if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
 
-                                            m_translateAbsAnchorWorld = m_initialPosition;
+                                            // 冻结起点应取“当前拖动器位置”，而不是旧缓存 m_initialPosition
+                                            m_translateAbsAnchorWorld = manipAx2.Location();
 
                                             m_translateAbsAxisWorld = axisDir;
                                             m_translateAbsAxisIndex = tmpActiveAxisIndex;
                                             m_hasTranslateAbsAnchor = true;
                                         }
+
                                     }
                                     // =========================================================================
 
@@ -1523,187 +1518,7 @@ namespace Mayo {
                     return;
                 }
 
-                else if (selected == m_rotAngleDim) {
 
-                    QWidget* viewWidget = m_occView->widget();
-                    QWidget* parentWidget = viewWidget->parentWidget();
-
-                    // 当前角度（rad）优先用缓存；如果缓存没了就按 0
-                    const double oldAngleRad = m_hasRotateAbsAnchor ? m_rotateAbsAngleRad : 0.0;
-                    const double oldAngleDeg = oldAngleRad * 180.0 / M_PI;
-                    const QString numberPart = QString::number(oldAngleDeg, 'f', 3);
-
-                    if (!m_editLine) {
-                        m_editLine = new QLineEdit(parentWidget);
-
-                        m_editLine->setStyleSheet("background: white; color: black; border: 1px solid red;");
-                        m_editLine->setAlignment(Qt::AlignCenter);
-                        m_editLine->setValidator(new QRegularExpressionValidator(
-                            QRegularExpression("^-?(360(\\.0+)?|([1-9]?\\d|[1-2]\\d{2}|3[0-5]\\d|359)(\\.\\d+)?|0(\\.\\d+)?)$"),
-                            m_editLine
-                        ));
-                        m_editLine->resize(90, 24);
-                        m_editLine->setFrame(true);
-                        m_editLine->hide();
-                    }
-
-                    // 每次点都更新文本与位置（避免旧值残留）
-                    m_editLine->setText(numberPart);
-
-                    // --------------------------
-                    // 计算输入框位置：用“旋转角文字”的理论位置（与 ShowRotationTrajectory 一致）
-                    // --------------------------
-                    if (m_aManipulator.IsNull()) {
-                        delete m_editLine;
-                        m_editLine = nullptr;
-                        return;
-                    }
-
-                    // 冻结 pivot/axis：不要依赖 ActiveAxisIndex（点维度对象时可能是 -1）
-                    gp_Ax2 ax2 = m_aManipulator->Position();
-
-                    int axisIndexFrozen = (m_rotateAbsAxisIndex >= 0 && m_rotateAbsAxisIndex <= 2) ? m_rotateAbsAxisIndex : 2;
-
-                    gp_Dir axisDirFrozen =
-                        (axisIndexFrozen == 0) ? ax2.XDirection() :
-                        (axisIndexFrozen == 1) ? ax2.YDirection() :
-                        ax2.Direction();
-
-                    gp_Pnt anchorFrozen = ax2.Location();
-
-                    // 如果你之前缓存有效，优先用缓存（保证与弧线完全一致）
-                    if (m_hasRotateAbsAnchor) {
-                        axisIndexFrozen = m_rotateAbsAxisIndex;
-                        axisDirFrozen = m_rotateAbsAxisWorld;
-                        anchorFrozen = m_rotateAbsAnchorWorld;
-                    }
-
-                    // 计算一个与旋转轴垂直的参考向量 v0
-                    Standard_Real viewDist = 200.0;
-                    if (m_occView && m_occView->v3dView().get() && m_occView->v3dView().get()->Camera()) {
-                        viewDist = anchorFrozen.Distance(m_occView->v3dView().get()->Camera()->Eye());
-                    }
-                    const Standard_Real lineLen = std::max<Standard_Real>(0.35 * viewDist, 80.0);
-                    const Standard_Real flyout = lineLen * 1.8;     // 与你 ShowRotationTrajectory 里一致（你当前就是 1.8）
-
-                    gp_Vec refVec = gp_Vec(axisDirFrozen).Crossed(gp_Vec(0, 0, 1));
-                    if (refVec.SquareMagnitude() < 1e-12) {
-                        refVec = gp_Vec(axisDirFrozen).Crossed(gp_Vec(1, 0, 0));
-                    }
-                    refVec.Normalize();
-                    gp_Vec v0 = refVec * lineLen;
-
-                    // 角文字放在角平分方向（start=0, end=oldAngleRad）
-                    const double midAngle = 0.5 * oldAngleRad;
-                    gp_Ax1 rotAxis(anchorFrozen, axisDirFrozen);
-
-                    gp_Vec vMid = v0;
-                    vMid.Rotate(rotAxis, midAngle);
-                    if (vMid.SquareMagnitude() > 1e-12) vMid.Normalize();
-
-                    // 文字半径：放在圆弧内侧，避免与圆弧重合（圆弧在外）
-                    gp_Pnt labelPnt = anchorFrozen.Translated(vMid * (flyout * 0.72));
-
-                    // 轻微朝相机方向抬起一点，减少被拖动器遮挡
-                    if (m_occView && m_occView->v3dView().get() && m_occView->v3dView().get()->Camera()) {
-                        const Handle(Graphic3d_Camera)& cam = m_occView->v3dView().get()->Camera();
-                        gp_Vec toEye(anchorFrozen, cam->Eye());
-                        if (toEye.SquareMagnitude() > 1e-12) {
-                            toEye.Normalize();
-                            labelPnt.Translate(toEye * (0.03 * lineLen));
-                        }
-                    }
-
-                    Standard_Integer vx = 0, vy = 0;
-                    m_occView->v3dView()->Convert(labelPnt.X(), labelPnt.Y(), labelPnt.Z(), vx, vy);
-
-                    QPoint viewLocalPos(vx, vy);
-                    QPoint globalPos = viewWidget->mapToGlobal(viewLocalPos);
-                    QPoint localPos = parentWidget->mapFromGlobal(globalPos);
-
-                    localPos -= QPoint(m_editLine->width() / 2, m_editLine->height() / 2);
-                    localPos += QPoint(0, -10);
-
-                    m_editLine->move(localPos);
-                    m_editLine->show();
-                    m_editLine->raise();
-                    m_editLine->setFocusPolicy(Qt::StrongFocus);
-                    m_editLine->setFocus();
-                    m_editLine->selectAll();
-
-                    // --------------------------
-                    // 提交：输入角度（deg） -> 计算 delta -> 应用 rotDelta 到对象与拖动器
-                    // --------------------------
-                    connect(m_editLine, &QLineEdit::editingFinished, this,
-                        [this, oldAngleRad, anchorFrozen, axisDirFrozen, axisIndexFrozen]() {
-
-                            if (!m_editLine || m_aManipulator.IsNull()) {
-                                return;
-                            }
-
-                            const QString txt = m_editLine->text().trimmed();
-                            bool ok = false;
-                            const double angleDeg = txt.toDouble(&ok);
-                            if (!ok) {
-                                delete m_editLine;
-                                m_editLine = nullptr;
-                                return;
-                            }
-
-                            const Standard_Real angleNew = angleDeg * M_PI / 180.0;
-                            const Standard_Real delta = angleNew - oldAngleRad;
-
-                            if (std::abs(delta) <= 1e-6) {
-                                delete m_editLine;
-                                m_editLine = nullptr;
-                                return;
-                            }
-
-                            const gp_Ax1 rotAxis(anchorFrozen, axisDirFrozen);
-                            gp_Trsf rotDelta;
-                            rotDelta.SetRotation(rotAxis, delta);
-
-                            // 1) 对象：应用同一个 rotDelta（与拖拽一致）
-                            Handle(AIS_ManipulatorObjectSequence) objects = m_aManipulator->Objects();
-                            AIS_ManipulatorObjectSequence::Iterator it(*objects);
-                            for (; it.More(); it.Next()) {
-                                const Handle(AIS_InteractiveObject)& obj = it.ChangeValue();
-                                const gp_Trsf oldTrsf = obj->Transformation();
-
-                                const Handle(TopLoc_Datum3D)& parent = obj->CombinedParentTransformation();
-                                if (!parent.IsNull() && parent->Form() != gp_Identity) {
-                                    obj->SetLocalTransformation(parent->Trsf().Inverted() * rotDelta * parent->Trsf() * oldTrsf);
-                                }
-                                else {
-                                    obj->SetLocalTransformation(rotDelta * oldTrsf);
-                                }
-                            }
-
-                            // 2) 拖动器：同样应用 rotDelta 到 gp_Ax2
-                            gp_Ax2 newAx2 = m_aManipulator->Position();
-                            newAx2.Transform(rotDelta);
-                            m_aManipulator->SetPosition(newAx2);
-
-                            // 3) 更新旋转缓存（下一次点击/拖拽要用）
-                            m_rotateAbsAnchorWorld = anchorFrozen;
-                            m_rotateAbsAxisWorld = axisDirFrozen;
-                            m_rotateAbsAxisIndex = axisIndexFrozen;
-                            m_hasRotateAbsAnchor = true;
-                            m_rotateAbsAngleRad = angleNew;
-
-                            // 4) 刷新旋转轨迹与角度标注（ShowRotationTrajectory 内部会重建 m_rotAngleDim）
-                            ShowRotationTrajectory(m_context, rotAxis, 0.0, angleNew);
-
-                            redrawView();
-
-                            delete m_editLine;
-                            m_editLine = nullptr;
-                        },
-                        Qt::UniqueConnection
-                    );
-
-                    return;
-                    }
 
 
                 else if (selected == m_rolabel) {
@@ -1829,16 +1644,28 @@ namespace Mayo {
                                 }
                             }
 
-                            // 2) 拖动器：同样用 rotDelta 变换它的 gp_Ax2（不要再拆矩阵重建）
+                            // 2) 拖动器：同样用 rotDelta 变换它的 gp_Ax2
                             gp_Ax2 newAx2 = m_aManipulator->Position();
                             newAx2.Transform(rotDelta);
                             m_aManipulator->SetPosition(newAx2);
 
+                            // 【新增】输入框路径也必须同步“平移相关缓存”，否则下一次平移还用旧起点/旧状态
+                            m_initialPosition = newAx2.Location();
+                            m_initialRotation = m_aManipulator->Transformation();
+
+                            // 让平移轨迹在下一次拖拽时强制重新冻结起点/轴向
+                            m_hasTranslateAbsAnchor = false;
+                            m_translateAbsAxisIndex = -1;
+
+                            // 强制下一次 MousePress 一定刷新（避免 currentOperation == m_lastOperation 导致不更新）
+                            m_lastOperation = -1;
+
                             // 3) 更新缓存角度（下一次输入用）
                             m_rotateAbsAngleRad = angleNew;
 
-                            // 4) 轨迹显示：同一根 frozen 轴 
+                            // 4) 轨迹显示
                             ShowRotationTrajectory(m_context, rotAxis, 0.0, angleNew);
+
 
                             redrawView();
 
