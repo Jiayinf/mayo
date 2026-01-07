@@ -248,6 +248,13 @@ namespace Mayo {
         int          m_rotateAbsAxisIndex = -1;
         Standard_Real m_rotateAbsAngleRad = 0.0; // ?????rad
 
+        // --- 旋转输入框会话冻结态（关键：避免输入框提交时串到别的轴） ---
+        bool         m_hasRotEditFrozen = false;
+        gp_Pnt       m_rotEditAnchorWorld;
+        gp_Dir       m_rotEditAxisWorld;
+        int          m_rotEditAxisIndex = -1;
+        Standard_Real m_rotEditOldAngleRad = 0.0;
+
 
 
         // 旋转角度数字在视口中的像素坐标（用于点击数字弹出输入框）

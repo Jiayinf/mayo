@@ -1022,6 +1022,9 @@ namespace Mayo {
             return;
         }*/
 
+        if (m_editLine && m_editLine->isVisible()) {
+            return;
+        }
 
         const Position currPos = toPosition(m_occView->widget()->mapFromGlobal(event->globalPos()));
         const Position prevPos = m_prevPos;
@@ -1524,6 +1527,35 @@ namespace Mayo {
                 else if (selected == m_rolabel) {
                     QString currentText = QString::fromUtf16(m_rolabel->Text().ToExtString());
 
+                    // -------------------------------------------------------
+                    // 【新增】冻结本次输入框要用的旋转轴/中心/旧角度（防止提交时串轴）
+                    // 必须在弹出输入框时冻结，而不是在 editingFinished 时再去读全局缓存
+                    // -------------------------------------------------------
+
+                    if (!m_hasRotateAbsAnchor) {
+                        // 兜底：如果全局缓存丢了，就从当前操纵器取一个合理值
+                        const gp_Ax2 ax2 = m_aManipulator->Position();
+                        int idx = m_aManipulator->ActiveAxisIndex();
+                        if (idx < 0 || idx > 2) idx = 2;
+
+                        gp_Dir axisDir = (idx == 0) ? ax2.XDirection()
+                            : (idx == 1) ? ax2.YDirection()
+                            : ax2.Direction();
+
+                        m_rotateAbsAnchorWorld = ax2.Location();
+                        m_rotateAbsAxisWorld = axisDir;
+                        m_rotateAbsAxisIndex = idx;
+                        m_rotateAbsAngleRad = 0.0;
+                        m_hasRotateAbsAnchor = true;
+                    }
+
+                    // 冻结本次编辑会话
+                    m_rotEditAnchorWorld = m_rotateAbsAnchorWorld;
+                    m_rotEditAxisWorld = m_rotateAbsAxisWorld;
+                    m_rotEditAxisIndex = m_rotateAbsAxisIndex;
+                    m_rotEditOldAngleRad = m_rotateAbsAngleRad;
+                    m_hasRotEditFrozen = true;
+
                     QWidget* parentWidget = m_occView->widget()->parentWidget();  // WidgetGuiDocument
 
                     if (!m_editLine) {
@@ -1586,6 +1618,13 @@ namespace Mayo {
                                 return;
                             }
 
+                            // 没有冻结态就不允许提交（避免串轴）
+                            if (!m_hasRotEditFrozen) {
+                                delete m_editLine;
+                                m_editLine = nullptr;
+                                return;
+                            }
+
                             const QString txt = m_editLine->text().trimmed();
                             bool ok = false;
                             const double angleDeg = txt.toDouble(&ok);
@@ -1597,25 +1636,12 @@ namespace Mayo {
 
                             const Standard_Real angleNew = angleDeg * M_PI / 180.0;
 
-                            // 若冻结状态丢失，兜底从当前 manipulator 取一次（避免输入框直接用到不稳定轴）
-                            if (!m_hasRotateAbsAnchor) {
-                                const gp_Ax2 ax2 = m_aManipulator->Position();
-                                const int idx = m_aManipulator->ActiveAxisIndex();
-                                gp_Dir axisDir = (idx == 0) ? ax2.XDirection()
-                                    : (idx == 1) ? ax2.YDirection()
-                                    : ax2.Direction();
-
-                                m_rotateAbsAnchorWorld = ax2.Location();
-                                m_rotateAbsAxisWorld = axisDir;
-                                m_rotateAbsAxisIndex = idx;
-                                m_rotateAbsAngleRad = 0.0;
-                                m_hasRotateAbsAnchor = true;
-                            }
-
-                            const Standard_Real delta = angleNew - m_rotateAbsAngleRad;
+                            // delta 必须相对“弹出输入框那一刻的旧角度”
+                            const Standard_Real delta = angleNew - m_rotEditOldAngleRad;
                             if (std::abs(delta) <= 1e-6) {
                                 delete m_editLine;
                                 m_editLine = nullptr;
+                                m_hasRotEditFrozen = false;
                                 return;
                             }
 
@@ -1623,8 +1649,8 @@ namespace Mayo {
                             m_rolabel->SetText(TCollection_ExtendedString(txt.toStdWString().c_str()));
                             m_context->Redisplay(m_rolabel, true);
 
-                            // 用 frozen 的轴 + pivot，构造“唯一的”旋转增量
-                            const gp_Ax1 rotAxis(m_rotateAbsAnchorWorld, m_rotateAbsAxisWorld);
+                            // 旋转轴必须用“本次冻结”的轴/中心（不会串到绿轴）
+                            const gp_Ax1 rotAxis(m_rotEditAnchorWorld, m_rotEditAxisWorld);
                             gp_Trsf rotDelta;
                             rotDelta.SetRotation(rotAxis, delta);
 
@@ -1649,30 +1675,30 @@ namespace Mayo {
                             newAx2.Transform(rotDelta);
                             m_aManipulator->SetPosition(newAx2);
 
-                            // 【新增】输入框路径也必须同步“平移相关缓存”，否则下一次平移还用旧起点/旧状态
-                            m_initialPosition = newAx2.Location();
-                            m_initialRotation = m_aManipulator->Transformation();
-
-                            // 让平移轨迹在下一次拖拽时强制重新冻结起点/轴向
-                            m_hasTranslateAbsAnchor = false;
-                            m_translateAbsAxisIndex = -1;
-
-                            // 强制下一次 MousePress 一定刷新（避免 currentOperation == m_lastOperation 导致不更新）
-                            m_lastOperation = -1;
-
-                            // 3) 更新缓存角度（下一次输入用）
+                            // 3) 同步全局缓存（轴/中心保持为本次冻结的那根）
+                            m_rotateAbsAnchorWorld = m_rotEditAnchorWorld;
+                            m_rotateAbsAxisWorld = m_rotEditAxisWorld;
+                            m_rotateAbsAxisIndex = m_rotEditAxisIndex;
+                            m_hasRotateAbsAnchor = true;
                             m_rotateAbsAngleRad = angleNew;
 
-                            // 4) 轨迹显示
+                            // 旋转后建议让平移冻结失效（你之前的平移起点问题）
+                            m_hasTranslateAbsAnchor = false;
+                            m_translateAbsAxisIndex = -1;
+                            m_lastOperation = -1;
+
+                            // 4) 轨迹显示：同一根冻结轴
                             ShowRotationTrajectory(m_context, rotAxis, 0.0, angleNew);
 
-
                             redrawView();
+
+                            m_hasRotEditFrozen = false;
 
                             delete m_editLine;
                             m_editLine = nullptr;
 
                             }, Qt::UniqueConnection);
+
 
                     }
                     return;
