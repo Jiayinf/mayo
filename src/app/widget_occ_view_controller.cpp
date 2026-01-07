@@ -445,8 +445,8 @@ namespace Mayo {
         if (std::abs(signedAngleRad) < 1e-10) signedAngleRad = 0.0;
 
         // SetCustomValue(Real) 以“模型单位”存储，显示时仍会按 SetDisplayUnits("deg") 做单位转换
-        m_rotAngleDim->SetCustomValue(signedAngleRad);  // 负值会显示为负角度 :contentReference[oaicite:2]{index=2}
-
+        //m_rotAngleDim->SetCustomValue(signedAngleRad);  // 负值会显示为负角度 :contentReference[oaicite:2]{index=2}
+        m_rotAngleDim->SetCustomValue(TCollection_ExtendedString(""));
         m_rotAngleDim->SetTextPosition(textPos);
 
         // 【新增】缓存角度数字位置（屏幕像素），用于点击数字弹输入框
@@ -458,7 +458,7 @@ namespace Mayo {
             m_hasRotAngleTextVpPos = true;
         }
         m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        ctx->SetDisplayPriority(m_rotAngleDim, 12);
+        /*ctx->SetDisplayPriority(m_rotAngleDim, 12);*/
         ctx->Display(m_rotAngleDim, Standard_False);
 
         // -------------------------------------------------------
@@ -485,10 +485,6 @@ namespace Mayo {
 
         ctx->UpdateCurrentViewer();
 
-
-        // 【新增】让维度对象更容易被选到（点弧线时也更稳）
-        ctx->Activate(m_rotAngleDim, 0, Standard_True);
-        ctx->SetSelectionSensitivity(m_rotAngleDim, 0, 8);
 
 
     }
