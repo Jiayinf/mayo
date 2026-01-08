@@ -261,7 +261,10 @@ namespace Mayo {
         QPoint m_rotAngleTextVpPos;
         bool   m_hasRotAngleTextVpPos = false;
 
-
+        // 旋转会话冻结：起始参考向量（黑线方向）
+        // 旋转过程中不会再重新计算，防止多轮旋转后起始线漂移
+        bool  m_hasRotateStartVec = false;
+        gp_Vec m_rotateStartVecWorld;   // 必须与旋转轴正交
 
 
 

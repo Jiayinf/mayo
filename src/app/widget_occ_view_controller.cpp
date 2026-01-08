@@ -948,18 +948,11 @@ namespace Mayo {
                         ax2.Direction();
 
 
-                    //if (!m_hasTranslateAbsAnchor || tmpActiveAxisIndex != m_translateAbsAxisIndex) {
-                    //    m_translateAbsAnchorWorld = ax2.Location();   
-                    //    m_translateAbsAxisWorld = axisDir;
-                    //    m_translateAbsAxisIndex = tmpActiveAxisIndex;
-                    //    m_hasTranslateAbsAnchor = true;
-                    //}
-
-                    m_rotateAbsAnchorWorld = ax2.Location();
-                    m_rotateAbsAxisWorld = axisDir;
-                    m_rotateAbsAxisIndex = tmpActiveAxisIndex;
-                    m_hasRotateAbsAnchor = true;
-                    m_rotateAbsAngleRad = 0.0;
+                    // 平移：只更新平移“绝对起点/轴”
+                    m_translateAbsAnchorWorld = ax2.Location();
+                    m_translateAbsAxisWorld = axisDir;
+                    m_translateAbsAxisIndex = tmpActiveAxisIndex;
+                    m_hasTranslateAbsAnchor = true;
 
                 }
                 // ======================================================================
@@ -1217,6 +1210,30 @@ namespace Mayo {
                                     m_rotateAbsAxisIndex = tmpActiveAxisIndex;
                                     m_hasRotateAbsAnchor = true;
                                     m_rotateAbsAngleRad = 0.0;
+
+                                    // 【新增】冻结起始参考向量（黑线方向），取“本次旋转开始时”的拖动器局部轴
+                                    // 规则：绕哪根轴转，就取另一根轴作为起始线的方向（并投影到垂直旋转轴的平面）
+                                    {
+                                        const gp_Ax2 ax2 = m_aManipulator->Position();
+
+                                        gp_Dir seed =
+                                            (tmpActiveAxisIndex == 0) ? ax2.YDirection() :   // 绕X转：用Y当起始方向
+                                            (tmpActiveAxisIndex == 1) ? ax2.XDirection() :   // 绕Y转：用X当起始方向（你也可用Z）
+                                            ax2.XDirection();     // 绕Z转：用X当起始方向
+
+                                        gp_Vec v(seed);
+                                        // 正交化：确保与旋转轴严格垂直（防止积累误差）
+                                        v = v - gp_Vec(curAxisDir) * v.Dot(gp_Vec(curAxisDir));
+                                        if (v.SquareMagnitude() < 1e-12) {
+                                            // 兜底：随便找个不平行的向量再叉一下
+                                            v = gp_Vec(curAxisDir).Crossed(gp_Vec(0, 0, 1));
+                                            if (v.SquareMagnitude() < 1e-12) v = gp_Vec(curAxisDir).Crossed(gp_Vec(1, 0, 0));
+                                        }
+                                        v.Normalize();
+
+                                        m_rotateStartVecWorld = v;
+                                        m_hasRotateStartVec = true;
+                                    }
                                 }
 
                                 m_rotateAbsAngleRad = signedAngle;
