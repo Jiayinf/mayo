@@ -349,15 +349,68 @@ namespace Mayo {
         Standard_Real lineLen = std::max<Standard_Real>(0.35 * viewDist, 80.0);
 
 
-        // 选一个与旋转轴垂直的参考方向 refVec（保证两条线在同一平面内，角度标注稳定）
-        gp_Vec refVec = gp_Vec(axisDir).Crossed(gp_Vec(0, 0, 1));
+        //// 选一个与旋转轴垂直的参考方向 refVec（保证两条线在同一平面内，角度标注稳定）
+        //gp_Vec refVec = gp_Vec(axisDir).Crossed(gp_Vec(0, 0, 1));
+        //if (refVec.SquareMagnitude() < 1e-12) {
+        //    refVec = gp_Vec(axisDir).Crossed(gp_Vec(1, 0, 0));
+        //}
+        //refVec.Normalize();
+
+        //// v0 是“未旋转”的参考向量
+        //gp_Vec v0 = refVec * lineLen;
+
+        // -----------------------------
+// 【改】参考向量：优先用“冻结的参考轴方向”
+// 这样黑线永远沿某个彩色轴（比如绕Y用Z），不会变成任意射线
+// -----------------------------
+        int rotAxisIndexForColor = -1;
+        int refAxisIndex = -1;
+
+        gp_Dir refDir(1, 0, 0);
+
+        // 先按你原先的方式判断“旋转轴颜色来源”
+        if (!m_aManipulator.IsNull()) {
+            const gp_Ax2 ax2 = m_aManipulator->Position();
+            const gp_Dir d = rotationAxis.Direction();
+
+            const double dx = std::abs(d.Dot(ax2.XDirection()));
+            const double dy = std::abs(d.Dot(ax2.YDirection()));
+            const double dz = std::abs(d.Dot(ax2.Direction()));
+
+            rotAxisIndexForColor = (dx >= dy && dx >= dz) ? 0 : (dy >= dz ? 1 : 2);
+        }
+        else {
+            rotAxisIndexForColor = 2; // fallback
+        }
+
+        // 规则：ref = (rot+1)%3  => Y(1)->Z(2 蓝)
+        refAxisIndex = (rotAxisIndexForColor + 1) % 3;
+
+        // 优先用冻结值（同一根旋转轴）
+        if (m_hasRotRefFrozen && m_rotRefRotAxisIndex == rotAxisIndexForColor) {
+            refDir = m_rotRefDirWorld;
+            refAxisIndex = m_rotRefAxisIndex;
+        }
+        else if (!m_aManipulator.IsNull()) {
+            // 兜底：如果冻结丢了，用当前操纵器轴方向临时算一次（但仍保证是“轴方向”）
+            const gp_Ax2 ax2 = m_aManipulator->Position();
+            refDir =
+                (refAxisIndex == 0) ? ax2.XDirection() :
+                (refAxisIndex == 1) ? ax2.YDirection() :
+                ax2.Direction();
+        }
+
+        // 正交化一次保险
+        gp_Vec refVec(refDir);
+        refVec = refVec - gp_Vec(axisDir) * refVec.Dot(gp_Vec(axisDir));
         if (refVec.SquareMagnitude() < 1e-12) {
-            refVec = gp_Vec(axisDir).Crossed(gp_Vec(1, 0, 0));
+            refVec = gp_Vec(axisDir).Crossed(gp_Vec(0, 0, 1));
+            if (refVec.SquareMagnitude() < 1e-12) refVec = gp_Vec(axisDir).Crossed(gp_Vec(1, 0, 0));
         }
         refVec.Normalize();
 
-        // v0 是“未旋转”的参考向量
         gp_Vec v0 = refVec * lineLen;
+
 
         // 旋转前/后的向量（围绕 rotationAxis 旋转）
         gp_Vec vBefore = v0;
@@ -1211,29 +1264,38 @@ namespace Mayo {
                                     m_hasRotateAbsAnchor = true;
                                     m_rotateAbsAngleRad = 0.0;
 
-                                    // 【新增】冻结起始参考向量（黑线方向），取“本次旋转开始时”的拖动器局部轴
-                                    // 规则：绕哪根轴转，就取另一根轴作为起始线的方向（并投影到垂直旋转轴的平面）
-                                    {
-                                        const gp_Ax2 ax2 = m_aManipulator->Position();
+                                    // -----------------------------
+                                    // 【新增】冻结“参考轴方向”
+                                    // 规则：ref = (rot+1)%3  => X->Y, Y->Z(蓝), Z->X
+                                    // 这样：绕绿色(Y=1)旋转时，永远取蓝色(Z=2)作为参考
+                                    // -----------------------------
+                                    m_rotRefRotAxisIndex = tmpActiveAxisIndex;
+                                    m_rotRefAxisIndex = (tmpActiveAxisIndex + 1) % 3;
 
-                                        gp_Dir seed =
-                                            (tmpActiveAxisIndex == 0) ? ax2.YDirection() :   // 绕X转：用Y当起始方向
-                                            (tmpActiveAxisIndex == 1) ? ax2.XDirection() :   // 绕Y转：用X当起始方向（你也可用Z）
-                                            ax2.XDirection();     // 绕Z转：用X当起始方向
+                                    const gp_Ax2 ax2Ref = m_aManipulator->Position();
+                                    gp_Dir refDir =
+                                        (m_rotRefAxisIndex == 0) ? ax2Ref.XDirection() :
+                                        (m_rotRefAxisIndex == 1) ? ax2Ref.YDirection() :
+                                        ax2Ref.Direction(); // Z
 
-                                        gp_Vec v(seed);
-                                        // 正交化：确保与旋转轴严格垂直（防止积累误差）
-                                        v = v - gp_Vec(curAxisDir) * v.Dot(gp_Vec(curAxisDir));
-                                        if (v.SquareMagnitude() < 1e-12) {
-                                            // 兜底：随便找个不平行的向量再叉一下
-                                            v = gp_Vec(curAxisDir).Crossed(gp_Vec(0, 0, 1));
-                                            if (v.SquareMagnitude() < 1e-12) v = gp_Vec(curAxisDir).Crossed(gp_Vec(1, 0, 0));
-                                        }
-                                        v.Normalize();
-
-                                        m_rotateStartVecWorld = v;
-                                        m_hasRotateStartVec = true;
+                                    // 正交化：保证 refDir 严格在“垂直旋转轴”的平面内
+                                    gp_Vec vRef(refDir);
+                                    vRef = vRef - gp_Vec(curAxisDir) * vRef.Dot(gp_Vec(curAxisDir));
+                                    if (vRef.SquareMagnitude() < 1e-12) {
+                                        // 兜底（理论上不会发生）：再找一个不平行的向量
+                                        vRef = gp_Vec(curAxisDir).Crossed(gp_Vec(0, 0, 1));
+                                        if (vRef.SquareMagnitude() < 1e-12) vRef = gp_Vec(curAxisDir).Crossed(gp_Vec(1, 0, 0));
                                     }
+                                    vRef.Normalize();
+
+                                    // 防翻面：如果之前已经冻结且是同一根旋转轴，保持方向连续（避免黑线突然反向）
+                                    if (m_hasRotRefFrozen && m_rotRefRotAxisIndex == tmpActiveAxisIndex) {
+                                        if (gp_Vec(m_rotRefDirWorld).Dot(vRef) < 0.0) vRef.Reverse();
+                                    }
+
+                                    m_rotRefDirWorld = gp_Dir(vRef);
+                                    m_hasRotRefFrozen = true;
+
                                 }
 
                                 m_rotateAbsAngleRad = signedAngle;

@@ -257,6 +257,8 @@ namespace Mayo {
 
 
 
+
+
         // 旋转角度数字在视口中的像素坐标（用于点击数字弹出输入框）
         QPoint m_rotAngleTextVpPos;
         bool   m_hasRotAngleTextVpPos = false;
@@ -265,6 +267,14 @@ namespace Mayo {
         // 旋转过程中不会再重新计算，防止多轮旋转后起始线漂移
         bool  m_hasRotateStartVec = false;
         gp_Vec m_rotateStartVecWorld;   // 必须与旋转轴正交
+
+
+        // --- 旋转标注：参考轴冻结（用于黑线/彩线始终沿轴，不漂移） ---
+        bool   m_hasRotRefFrozen = false;     // 是否已冻结参考轴方向
+        int    m_rotRefRotAxisIndex = -1;     // 本次冻结对应的旋转轴索引(0/1/2)
+        int    m_rotRefAxisIndex = -1;        // 参考轴索引(比如 rot=1 -> ref=2)
+        gp_Dir m_rotRefDirWorld;              // 参考轴在世界坐标下的方向（冻结）
+
 
 
 
