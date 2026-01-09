@@ -161,6 +161,7 @@ namespace Mayo {
         Handle(AIS_TextLabel) m_rolabel = nullptr;
         // 平移距离尺寸标注（独立于轨迹线的标注辅助线+箭头+文字）
         Handle(PrsDim_LengthDimension) m_translateDim = nullptr;
+        //Handle(AIS_Shape) m_rotArc;   // 【新增】自己画的旋转圆弧（固定半径）
 
         // 旋转显示：两条参考线 + 角度标注（OCC）
         Handle(AIS_Shape) m_rotLineBefore;                  // 旋转前参考线
@@ -251,6 +252,11 @@ namespace Mayo {
         gp_Dir m_rotRefSeedDirWorld;         // 参考轴正方向（来自操纵器 Ax2）
         gp_Vec m_rotRefVecWorld;             // 投影到旋转平面内的参考向量（单位向量）
         gp_Dir m_rotRefDirWorld;              // 参考轴在世界坐标下的方向（冻结）
+
+        // --- 旋转叠加层尺寸冻结（避免 flyout/半径 抖动） ---
+        bool        m_hasRotOverlaySizeFrozen = false;
+        Standard_Real m_rotOverlayLineLen = 0.0;
+        Standard_Real m_rotOverlayFlyout = 0.0;
 
 
 

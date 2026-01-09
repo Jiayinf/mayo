@@ -263,6 +263,11 @@ namespace Mayo {
         double startAngle,
         double endAngle)
     {
+        /*if (!m_rotArc.IsNull()) {
+            ctx->Remove(m_rotArc, Standard_False);
+            m_rotArc.Nullify();
+        }*/
+        
         if (!m_trajectoryShape.IsNull()) {
             ctx->Remove(m_trajectoryShape, Standard_False); // 移除旧轨迹
             m_trajectoryShape.Nullify();
@@ -341,13 +346,25 @@ namespace Mayo {
         const gp_Pnt center = rotationAxis.Location();
         const gp_Dir axisDir = rotationAxis.Direction();
 
-        // 线段长度：沿用你之前按相机距离取的尺度（防止太短看不见）
 
-        Standard_Real viewDist = 200.0;
-        if (m_occView && !m_occView->v3dView().IsNull() && m_occView->v3dView()->Camera()) {
-            viewDist = center.Distance(m_occView->v3dView()->Camera()->Eye());
+
+        // 线段长度：优先使用本次旋转会话冻结的尺寸，避免圆弧半径抖动
+        Standard_Real lineLen = 120.0;  // fallback
+        Standard_Real flyout = 144.0;  // fallback
+
+        if (m_hasRotOverlaySizeFrozen && m_rotOverlayLineLen > 1e-6 && m_rotOverlayFlyout > 1e-6) {
+            lineLen = m_rotOverlayLineLen;
+            flyout = m_rotOverlayFlyout;
         }
-        Standard_Real lineLen = std::max<Standard_Real>(0.35 * viewDist, 80.0);
+        else {
+            // 兜底：如果还没冻结（极少），按旧逻辑算一次
+            Standard_Real viewDist = 200.0;
+            if (m_occView && !m_occView->v3dView().IsNull() && m_occView->v3dView()->Camera()) {
+                viewDist = center.Distance(m_occView->v3dView()->Camera()->Eye());
+            }
+            lineLen = std::max<Standard_Real>(0.35 * viewDist, 80.0);
+            flyout = lineLen * 1.2;
+        }
 
 
         // 选一个与旋转轴垂直的参考方向 refVec
@@ -431,7 +448,7 @@ namespace Mayo {
         // -----------------------------
         // 1) 让“标注圆弧”比默认更大一点（Flyout 越大，圆弧半径越大）
         // -----------------------------
-        const Standard_Real flyout = lineLen * 1.2;   // 你现在没设flyout；0.80~0.95 都可微调
+        //const Standard_Real flyout = lineLen * 1.2;   // 你现在没设flyout；0.80~0.95 都可微调
         m_rotAngleDim->SetFlyout(flyout);
 
 
@@ -468,7 +485,7 @@ namespace Mayo {
         // SetCustomValue(Real) 以“模型单位”存储，显示时仍会按 SetDisplayUnits("deg") 做单位转换
         //m_rotAngleDim->SetCustomValue(signedAngleRad);  // 负值会显示为负角度 :contentReference[oaicite:2]{index=2}
         //m_rotAngleDim->SetCustomValue(TCollection_ExtendedString(""));
-        m_rotAngleDim->SetTextPosition(textPos);
+        /*m_rotAngleDim->SetTextPosition(textPos);*/
 
         m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
         /*ctx->SetDisplayPriority(m_rotAngleDim, 12);*/
@@ -760,6 +777,7 @@ namespace Mayo {
     {
         this->setViewCursor(Qt::ArrowCursor);
         V3dViewController::stopDynamicAction();
+        m_hasRotOverlaySizeFrozen = false;
     }
 
     void WidgetOccViewController::setViewCursor(const QCursor& cursor)
@@ -1216,6 +1234,21 @@ namespace Mayo {
                                     m_rotateAbsAxisIndex = tmpActiveAxisIndex;
                                     m_hasRotateAbsAnchor = true;
                                     m_rotateAbsAngleRad = 0.0;
+
+
+                                    // -----------------------------
+                                    // 【新增】冻结叠加层尺寸：lineLen / flyout
+                                    // 只在本次“旋转会话 pivot/axis 发生刷新”时算一次
+                                    // -----------------------------
+                                    Standard_Real viewDist = 200.0;
+                                    if (m_occView && !m_occView->v3dView().IsNull() && m_occView->v3dView()->Camera()) {
+                                        viewDist = m_rotateAbsAnchorWorld.Distance(m_occView->v3dView()->Camera()->Eye());
+                                    }
+
+                                    m_rotOverlayLineLen = std::max<Standard_Real>(0.35 * viewDist, 80.0);
+                                    m_rotOverlayFlyout = m_rotOverlayLineLen * 1.2;   // 你现在用 1.2，就沿用
+                                    m_hasRotOverlaySizeFrozen = true;
+
 
                                     // -----------------------------
                                     // 【新增】冻结“参考轴方向”
