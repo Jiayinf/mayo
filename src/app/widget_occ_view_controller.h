@@ -1,10 +1,4 @@
-﻿/****************************************************************************
-** Copyright (c) 2021, Fougue Ltd. <http://www.fougue.pro>
-** All rights reserved.
-** See license at https://github.com/fougue/mayo/blob/master/LICENSE.txt
-****************************************************************************/
-
-#pragma once
+﻿#pragma once
 
 #include "../base/span.h"
 #include "../gui/v3d_view_controller.h"
@@ -25,9 +19,10 @@
 #include <QLineEdit>
 #include <QWidget>
 
-#include <PrsDim_LengthDimension.hxx>
-#include <PrsDim_AngleDimension.hxx>   // 【新增】旋转角度标注
-#include <gp_Pnt.hxx>
+
+#include <PrsDim_AngleDimension.hxx>   
+#include <gp_Dir.hxx>   
+#include <gp_Vec.hxx>
 
 
 class QCursor;
@@ -183,10 +178,7 @@ namespace Mayo {
         Handle(AIS_Shape) arrowStart = nullptr;
         Handle(AIS_Shape) arrowEnd = nullptr;
         QLineEdit* m_editLine = nullptr;
-        //int activeModeTmp = 0;
-        //int activeAxisIndexTmp = 0;
-        //Handle(AIS_Shape) moveShape = nullptr;
-        //Handle(AIS_Shape) rotationShape = nullptr;
+
 
         gp_Ax1 tmpRotationAxis;
         Standard_Real tempAngle;
@@ -203,24 +195,6 @@ namespace Mayo {
         int m_meshId;
 
         Position m_lastManipulatorPos;
-
-        //template<class T>
-        //class CoinPtr : public boost::intrusive_ptr<T> {
-        //public:
-        //    // Too bad, VC2013 does not support constructor inheritance
-        //    //using boost::intrusive_ptr<T>::intrusive_ptr;
-        //    using inherited = boost::intrusive_ptr<T>;
-        //    CoinPtr() = default;
-        //    CoinPtr(T* p, bool add_ref = true) :inherited(p, add_ref) {}
-        //    template<class Y> CoinPtr(CoinPtr<Y> const& r) : inherited(r) {}
-
-        //    operator T* () const {
-        //        return this->get();
-        //    }//explicit bombs
-        //};
-
-
-        //CoinPtr<SoDragger> pcDragger;
 
     private:
         /*static void dragStartCallback(void* data, SoDragger* d);
@@ -269,10 +243,13 @@ namespace Mayo {
         gp_Vec m_rotateStartVecWorld;   // 必须与旋转轴正交
 
 
-        // --- 旋转标注：参考轴冻结（用于黑线/彩线始终沿轴，不漂移） ---
-        bool   m_hasRotRefFrozen = false;     // 是否已冻结参考轴方向
-        int    m_rotRefRotAxisIndex = -1;     // 本次冻结对应的旋转轴索引(0/1/2)
-        int    m_rotRefAxisIndex = -1;        // 参考轴索引(比如 rot=1 -> ref=2)
+        // 旋转“参考轴”冻结：保证黑色起始线永远沿“本次旋转开始前”的参考轴正方向（且不翻转）
+        bool  m_hasRotRefFrozen = false;
+        int   m_rotRefOperationId = -1;      // 对应 m_lastOperation，用于区分多次操作
+        int   m_rotRefRotAxisIndex = -1;     // 当前绕哪根轴旋转(0/1/2)
+        int   m_rotRefAxisIndex = -1;        // 用哪根轴做参考线(0/1/2) 例：绕绿Y -> 参考蓝Z
+        gp_Dir m_rotRefSeedDirWorld;         // 参考轴正方向（来自操纵器 Ax2）
+        gp_Vec m_rotRefVecWorld;             // 投影到旋转平面内的参考向量（单位向量）
         gp_Dir m_rotRefDirWorld;              // 参考轴在世界坐标下的方向（冻结）
 
 

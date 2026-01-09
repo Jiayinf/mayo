@@ -283,6 +283,7 @@ namespace Mayo {
             ctx->Remove(m_rotLineAfter, Standard_False);
             m_rotLineAfter.Nullify();
         }
+
         if (!m_rotAngleDim.IsNull()) {
             ctx->Remove(m_rotAngleDim, Standard_False);
             m_rotAngleDim.Nullify();
@@ -349,68 +350,35 @@ namespace Mayo {
         Standard_Real lineLen = std::max<Standard_Real>(0.35 * viewDist, 80.0);
 
 
-        //// 选一个与旋转轴垂直的参考方向 refVec（保证两条线在同一平面内，角度标注稳定）
-        //gp_Vec refVec = gp_Vec(axisDir).Crossed(gp_Vec(0, 0, 1));
-        //if (refVec.SquareMagnitude() < 1e-12) {
-        //    refVec = gp_Vec(axisDir).Crossed(gp_Vec(1, 0, 0));
-        //}
-        //refVec.Normalize();
+        // 选一个与旋转轴垂直的参考方向 refVec
+        // 优先使用本次旋转会话冻结的 m_rotRefDirWorld，确保方向连续，避免圆弧偶发跑到对顶角
+        gp_Vec refVec;
+        if (m_hasRotRefFrozen) {
+            refVec = gp_Vec(m_rotRefDirWorld);
 
-        //// v0 是“未旋转”的参考向量
-        //gp_Vec v0 = refVec * lineLen;
-
-        // -----------------------------
-// 【改】参考向量：优先用“冻结的参考轴方向”
-// 这样黑线永远沿某个彩色轴（比如绕Y用Z），不会变成任意射线
-// -----------------------------
-        int rotAxisIndexForColor = -1;
-        int refAxisIndex = -1;
-
-        gp_Dir refDir(1, 0, 0);
-
-        // 先按你原先的方式判断“旋转轴颜色来源”
-        if (!m_aManipulator.IsNull()) {
-            const gp_Ax2 ax2 = m_aManipulator->Position();
-            const gp_Dir d = rotationAxis.Direction();
-
-            const double dx = std::abs(d.Dot(ax2.XDirection()));
-            const double dy = std::abs(d.Dot(ax2.YDirection()));
-            const double dz = std::abs(d.Dot(ax2.Direction()));
-
-            rotAxisIndexForColor = (dx >= dy && dx >= dz) ? 0 : (dy >= dz ? 1 : 2);
+            // 再正交化一次：确保 refVec 严格位于“垂直旋转轴”的平面内（防止数值漂移）
+            refVec = refVec - gp_Vec(axisDir) * refVec.Dot(gp_Vec(axisDir));
+            if (refVec.SquareMagnitude() < 1e-12) {
+                // 极端退化：fallback
+                refVec = gp_Vec(axisDir).Crossed(gp_Vec(0, 0, 1));
+                if (refVec.SquareMagnitude() < 1e-12) {
+                    refVec = gp_Vec(axisDir).Crossed(gp_Vec(1, 0, 0));
+                }
+            }
+            refVec.Normalize();
         }
         else {
-            rotAxisIndexForColor = 2; // fallback
-        }
-
-        // 规则：ref = (rot+1)%3  => Y(1)->Z(2 蓝)
-        refAxisIndex = (rotAxisIndexForColor + 1) % 3;
-
-        // 优先用冻结值（同一根旋转轴）
-        if (m_hasRotRefFrozen && m_rotRefRotAxisIndex == rotAxisIndexForColor) {
-            refDir = m_rotRefDirWorld;
-            refAxisIndex = m_rotRefAxisIndex;
-        }
-        else if (!m_aManipulator.IsNull()) {
-            // 兜底：如果冻结丢了，用当前操纵器轴方向临时算一次（但仍保证是“轴方向”）
-            const gp_Ax2 ax2 = m_aManipulator->Position();
-            refDir =
-                (refAxisIndex == 0) ? ax2.XDirection() :
-                (refAxisIndex == 1) ? ax2.YDirection() :
-                ax2.Direction();
-        }
-
-        // 正交化一次保险
-        gp_Vec refVec(refDir);
-        refVec = refVec - gp_Vec(axisDir) * refVec.Dot(gp_Vec(axisDir));
-        if (refVec.SquareMagnitude() < 1e-12) {
+            // 未冻结时才用 cross 方案
             refVec = gp_Vec(axisDir).Crossed(gp_Vec(0, 0, 1));
-            if (refVec.SquareMagnitude() < 1e-12) refVec = gp_Vec(axisDir).Crossed(gp_Vec(1, 0, 0));
+            if (refVec.SquareMagnitude() < 1e-12) {
+                refVec = gp_Vec(axisDir).Crossed(gp_Vec(1, 0, 0));
+            }
+            refVec.Normalize();
         }
-        refVec.Normalize();
 
+
+        // v0 是“未旋转”的参考向量
         gp_Vec v0 = refVec * lineLen;
-
 
         // 旋转前/后的向量（围绕 rotationAxis 旋转）
         gp_Vec vBefore = v0;
@@ -463,7 +431,7 @@ namespace Mayo {
         // -----------------------------
         // 1) 让“标注圆弧”比默认更大一点（Flyout 越大，圆弧半径越大）
         // -----------------------------
-        const Standard_Real flyout = lineLen * 1.8;   // 你现在没设flyout；0.80~0.95 都可微调
+        const Standard_Real flyout = lineLen * 1.2;   // 你现在没设flyout；0.80~0.95 都可微调
         m_rotAngleDim->SetFlyout(flyout);
 
 
@@ -499,7 +467,7 @@ namespace Mayo {
 
         // SetCustomValue(Real) 以“模型单位”存储，显示时仍会按 SetDisplayUnits("deg") 做单位转换
         //m_rotAngleDim->SetCustomValue(signedAngleRad);  // 负值会显示为负角度 :contentReference[oaicite:2]{index=2}
-        m_rotAngleDim->SetCustomValue(TCollection_ExtendedString(""));
+        //m_rotAngleDim->SetCustomValue(TCollection_ExtendedString(""));
         m_rotAngleDim->SetTextPosition(textPos);
 
         m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
@@ -507,8 +475,8 @@ namespace Mayo {
         ctx->Display(m_rotAngleDim, Standard_False);
 
         // -------------------------------------------------------
-        // 【新增】用 AIS_TextLabel 显示“角度数值”，并作为可点击入口（恢复你原先可用的交互方式）
-        // 注意：文本必须是纯数字（不要加 "deg"），否则你 editingFinished 里 toDouble 会失败
+        // 用 AIS_TextLabel 显示“角度数值”，并作为可点击入口（恢复原先可用的交互方式）
+        // 注意：文本必须是纯数字（不要加 "deg"），否则 editingFinished 里 toDouble 会失败
         // -------------------------------------------------------
         
         {
@@ -673,21 +641,6 @@ namespace Mayo {
         std::ostringstream oss;
         oss.setf(std::ios::fixed);
 
-        //      oss << std::setprecision(3) << signedDistance;
-        //      std::string distanceStr = oss.str();
-
-        //      m_label = new AIS_TextLabel();
-        //      m_label->SetText(TCollection_ExtendedString(distanceStr.c_str()));
-        //      m_label->SetColor(trajColor);
-
-        //      gp_Pnt midPoint((startPoint.XYZ() + endPoint.XYZ()) / 2.0);
-
-        //      m_label->SetPosition(midPoint);
-
-              //// ? Display ?? ZLayer??
-        //      m_label->SetZLayer(Graphic3d_ZLayerId_Topmost);
-
-        //      ctx->Display(m_label, Standard_False);
 
         // =======================12.26 =======================
         // ======= Simple dimension label (parallel dimension line next to trajectory) =======
