@@ -166,6 +166,7 @@ namespace Mayo {
         // 旋转显示：两条参考线 + 角度标注（OCC）
         Handle(AIS_Shape) m_rotLineBefore;                  // 旋转前参考线
         Handle(AIS_Shape) m_rotLineAfter;                   // 旋转后参考线
+        Handle(AIS_Shape) m_rotArc;                 // 【新增】自绘圆弧
         Handle(PrsDim_AngleDimension) m_rotAngleDim;        // 角度标注
 
 

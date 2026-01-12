@@ -263,10 +263,10 @@ namespace Mayo {
         double startAngle,
         double endAngle)
     {
-        /*if (!m_rotArc.IsNull()) {
+        if (!m_rotArc.IsNull()) {
             ctx->Remove(m_rotArc, Standard_False);
             m_rotArc.Nullify();
-        }*/
+        }
         
         if (!m_trajectoryShape.IsNull()) {
             ctx->Remove(m_trajectoryShape, Standard_False); // 移除旧轨迹
@@ -363,7 +363,7 @@ namespace Mayo {
                 viewDist = center.Distance(m_occView->v3dView()->Camera()->Eye());
             }
             lineLen = std::max<Standard_Real>(0.35 * viewDist, 80.0);
-            flyout = lineLen * 1.2;
+            flyout = lineLen * 0.6;
         }
 
 
@@ -428,43 +428,111 @@ namespace Mayo {
         ctx->SetDisplayPriority(m_rotLineAfter, 11);
         ctx->Display(m_rotLineAfter, Standard_False);
 
-        // 角度标注（类似你示例：PrsDim_AngleDimension(edge1, edge2)）
-        m_rotAngleDim = new PrsDim_AngleDimension(edgeBefore, edgeAfter);
+        //// 角度标注（类似你示例：PrsDim_AngleDimension(edge1, edge2)）
+        //m_rotAngleDim = new PrsDim_AngleDimension(edgeBefore, edgeAfter);
 
-        Handle(Prs3d_DimensionAspect) dimensionAspect = new Prs3d_DimensionAspect();
-        dimensionAspect->MakeArrows3d(Standard_False);
-        dimensionAspect->MakeText3d(Standard_False);          // false：用 2D 文本显示
-        dimensionAspect->TextAspect()->SetHeight(20.0);
-        dimensionAspect->MakeTextShaded(true);
-        
-        // 颜色：圆弧 + 文字 跟随旋转轴颜色（与 m_rotLineAfter 一致）
-        dimensionAspect->SetCommonColor(trajColor);
+        //Handle(Prs3d_DimensionAspect) dimensionAspect = new Prs3d_DimensionAspect();
+        //dimensionAspect->MakeArrows3d(Standard_False);
+        //dimensionAspect->MakeText3d(Standard_False);          // false：用 2D 文本显示
+        //dimensionAspect->TextAspect()->SetHeight(0.0);
+        //dimensionAspect->MakeTextShaded(false);
+        //
+        //// 颜色：圆弧 + 文字 跟随旋转轴颜色（与 m_rotLineAfter 一致）
+        //dimensionAspect->SetCommonColor(trajColor);
 
-        dimensionAspect->MakeUnitsDisplayed(false);
+        //dimensionAspect->MakeUnitsDisplayed(false);
 
-        m_rotAngleDim->SetDisplayUnits("deg");
-        m_rotAngleDim->SetDimensionAspect(dimensionAspect);
+        //m_rotAngleDim->SetDisplayUnits("deg");
+        //m_rotAngleDim->SetDimensionAspect(dimensionAspect);
 
-        // -----------------------------
-        // 1) 让“标注圆弧”比默认更大一点（Flyout 越大，圆弧半径越大）
-        // -----------------------------
-        //const Standard_Real flyout = lineLen * 1.2;   // 你现在没设flyout；0.80~0.95 都可微调
-        m_rotAngleDim->SetFlyout(flyout);
+        //// -----------------------------
+        //// 1) 让“标注圆弧”比默认更大一点（Flyout 越大，圆弧半径越大）
+        //// -----------------------------
+        ////const Standard_Real flyout = lineLen * 1.2;   // 你现在没设flyout；0.80~0.95 都可微调
+        //m_rotAngleDim->SetFlyout(flyout);
 
 
-        // -----------------------------
-        // 2) 让数字在圆弧“里面”（圆弧在数字外侧）
-        //    做法：把文字放到角平分线方向，并且半径 < flyout
-        // -----------------------------
+        //// -----------------------------
+        //// 2) 让数字在圆弧“里面”（圆弧在数字外侧）
+        ////    做法：把文字放到角平分线方向，并且半径 < flyout
+        //// -----------------------------
+        //auto normToPi = [](double a) {
+        //    while (a > M_PI) a -= 2.0 * M_PI;
+        //    while (a < -M_PI) a += 2.0 * M_PI;
+        //    return a;
+        //};
+
+
+        //// 角平分线方向（midAngle）
+        //const double delta = normToPi(endAngle - startAngle);
+        //const double midAngle = startAngle + 0.5 * delta;
+
+        //gp_Vec vMid = v0;
+        //vMid.Rotate(rotationAxis, midAngle);
+        //if (vMid.SquareMagnitude() > 1e-12) {
+        //    vMid.Normalize();
+        //}
+
+        //// textRadius 要小于 flyout：这样圆弧在数字外面
+        //const Standard_Real textRadius = flyout * 0.8;   // 0.65~0.80 可调：越小越靠内
+        //gp_Pnt textPos = center.Translated(vMid * textRadius);
+
+
+        //double signedAngleRad = normToPi(endAngle - startAngle);
+        //// 避免 -0.00
+        //if (std::abs(signedAngleRad) < 1e-10) signedAngleRad = 0.0;
+
+        //// SetCustomValue(Real) 以“模型单位”存储，显示时仍会按 SetDisplayUnits("deg") 做单位转换
+        ////m_rotAngleDim->SetCustomValue(signedAngleRad);  // 负值会显示为负角度 :contentReference[oaicite:2]{index=2}
+        ////m_rotAngleDim->SetCustomValue(TCollection_ExtendedString(""));
+        ///*m_rotAngleDim->SetTextPosition(textPos);*/
+
+        //m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ///*ctx->SetDisplayPriority(m_rotAngleDim, 12);*/
+        //ctx->Display(m_rotAngleDim, Standard_False);
+
+        // ==========================================================
+        // 【替代方案】自绘固定半径圆弧（不使用 PrsDim_AngleDimension，彻底去掉外圈不可选数字）
+        // ==========================================================
+
         auto normToPi = [](double a) {
             while (a > M_PI) a -= 2.0 * M_PI;
             while (a < -M_PI) a += 2.0 * M_PI;
             return a;
-        };
+            };
 
-
-        // 角平分线方向（midAngle）
+        // 用同一套“取 (-pi, pi]”的角度差，保证弧线和内侧数字一致
         const double delta = normToPi(endAngle - startAngle);
+        const double arcEndAngle = startAngle + delta;
+
+        // 画圆弧：圆所在坐标系（原点=center，法向=axisDir，X方向=refVec）
+        gp_Ax2 arcAx2(center, axisDir, gp_Dir(refVec));
+        Handle(Geom_Circle) circle = new Geom_Circle(arcAx2, flyout);
+
+        // trimmed 参数区间 & 方向（delta 可能为负）
+        Standard_Real u1 = static_cast<Standard_Real>(startAngle);
+        Standard_Real u2 = static_cast<Standard_Real>(arcEndAngle);
+        Standard_Boolean sense = Standard_True;
+        if (u2 < u1) {
+            std::swap(u1, u2);
+            sense = Standard_False;
+        }
+
+        Handle(Geom_TrimmedCurve) arcCrv = new Geom_TrimmedCurve(circle, u1, u2, sense);
+        TopoDS_Edge arcEdge = BRepBuilderAPI_MakeEdge(arcCrv);
+
+        // 显示圆弧
+        m_rotArc = new AIS_Shape(arcEdge);
+        m_rotArc->SetColor(trajColor);
+        m_rotArc->SetWidth(2.0);
+        m_rotArc->SetZLayer(Graphic3d_ZLayerId_Topmost);
+        ctx->SetDisplayPriority(m_rotArc, 12);
+        ctx->Display(m_rotArc, Standard_False);
+
+        // ----------------------------------------------------------
+        // 下面继续沿用你原逻辑：计算文字位置 textPos / signedAngleRad
+        // ----------------------------------------------------------
+
         const double midAngle = startAngle + 0.5 * delta;
 
         gp_Vec vMid = v0;
@@ -473,23 +541,16 @@ namespace Mayo {
             vMid.Normalize();
         }
 
-        // textRadius 要小于 flyout：这样圆弧在数字外面
-        const Standard_Real textRadius = flyout * 0.72;   // 0.65~0.80 可调：越小越靠内
+        // 文字位置（仍放在弧内侧）
+        const Standard_Real textRadius = flyout * 0.72; // 0.65~0.85 自行微调
         gp_Pnt textPos = center.Translated(vMid * textRadius);
 
-
-        double signedAngleRad = normToPi(endAngle - startAngle);
-        // 避免 -0.00
+        // 角度数值（与弧一致）
+        double signedAngleRad = delta;
         if (std::abs(signedAngleRad) < 1e-10) signedAngleRad = 0.0;
 
-        // SetCustomValue(Real) 以“模型单位”存储，显示时仍会按 SetDisplayUnits("deg") 做单位转换
-        //m_rotAngleDim->SetCustomValue(signedAngleRad);  // 负值会显示为负角度 :contentReference[oaicite:2]{index=2}
-        //m_rotAngleDim->SetCustomValue(TCollection_ExtendedString(""));
-        /*m_rotAngleDim->SetTextPosition(textPos);*/
 
-        m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        /*ctx->SetDisplayPriority(m_rotAngleDim, 12);*/
-        ctx->Display(m_rotAngleDim, Standard_False);
+
 
         // -------------------------------------------------------
         // 用 AIS_TextLabel 显示“角度数值”，并作为可点击入口（恢复原先可用的交互方式）
@@ -537,6 +598,31 @@ namespace Mayo {
 
     void Mayo::WidgetOccViewController::ShowTransformTrajectory(const Handle(AIS_InteractiveContext)& ctx, const gp_Ax1& rotationAxis, gp_Pnt startPoint, gp_Pnt endPoint)
     {
+        // 【新增】开始平移轨迹时，必须清理旋转辅助线与角度标注
+        if (!m_rotLineBefore.IsNull()) {
+            ctx->Remove(m_rotLineBefore, Standard_False);
+            m_rotLineBefore.Nullify();
+        }
+        if (!m_rotLineAfter.IsNull()) {
+            ctx->Remove(m_rotLineAfter, Standard_False);
+            m_rotLineAfter.Nullify();
+        }
+        if (!m_rotAngleDim.IsNull()) {
+            ctx->Remove(m_rotAngleDim, Standard_False);
+            m_rotAngleDim.Nullify();
+        }
+
+        if (!m_rotArc.IsNull()) {
+            ctx->Remove(m_rotArc, Standard_False);
+            m_rotArc.Nullify();
+        }
+        if (!m_rolabel.IsNull()) {
+            ctx->Remove(m_rolabel, Standard_False);
+            m_rolabel.Nullify();
+        }
+        ctx->UpdateCurrentViewer();
+
+        
         // 在更新轨迹的函数中：
         if (!m_trajectoryShape.IsNull()) {
             ctx->Remove(m_trajectoryShape, Standard_False); // 移除旧轨迹
@@ -897,6 +983,34 @@ namespace Mayo {
                 int tmpActiveAxisIndex = m_aManipulator->ActiveAxisIndex();
                 int tmpActiveAxisMode = m_aManipulator->ActiveMode();
 
+                auto clearRotationOverlay = [&](const Handle(AIS_InteractiveContext)& ctx) {
+                    if (ctx.IsNull()) return;
+
+                    if (!m_rotArc.IsNull()) {
+                        ctx->Remove(m_rotArc, Standard_False);
+                        m_rotArc.Nullify();
+                    }
+                    if (!m_rotLineBefore.IsNull()) {
+                        ctx->Remove(m_rotLineBefore, Standard_False);
+                        m_rotLineBefore.Nullify();
+                    }
+                    if (!m_rotLineAfter.IsNull()) {
+                        ctx->Remove(m_rotLineAfter, Standard_False);
+                        m_rotLineAfter.Nullify();
+                    }
+                    if (!m_rotAngleDim.IsNull()) {
+                        ctx->Remove(m_rotAngleDim, Standard_False);
+                        m_rotAngleDim.Nullify();
+                    }
+                    if (!m_rolabel.IsNull()) {
+                        ctx->Remove(m_rolabel, Standard_False);
+                        m_rolabel.Nullify();
+                    }
+
+                    ctx->UpdateCurrentViewer(); // 关键：立刻刷新
+                    };
+
+
                 if (AIS_MM_Translation == tmpActiveAxisMode)
                 {
 
@@ -922,6 +1036,12 @@ namespace Mayo {
                     m_aManipulator->SetPart(0, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 X 轴的旋转 
                     m_aManipulator->SetPart(1, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Y 轴的旋转 
                     m_aManipulator->SetPart(2, AIS_ManipulatorMode::AIS_MM_Rotation, Standard_False); // 禁用了 Z 轴的旋转 
+
+                    // 【新增】一进入平移模式就清理上一帧旋转轨迹（避免“先旋转再平移”残留）
+                    if (m_lastOperation >= 4 && m_lastOperation <= 6) { // 4/5/6 对应旋转三轴
+                        clearRotationOverlay(m_context);
+                    }
+
                 }
                 else if (AIS_MM_Rotation == tmpActiveAxisMode)
                 {
@@ -1208,7 +1328,35 @@ namespace Mayo {
                                 Standard_Real qAngle = 0.0;
                                 deltaRotation.GetVectorAndAngle(qAxis, qAngle);
 
-                                double signedAngle = (qAxis.Dot(axisRotation) < 0.0) ? -qAngle : qAngle;
+                                // 1) 取稳定参考方向：优先用你已冻结的 m_rotRefDirWorld
+                                gp_Vec refVec;
+                                if (m_hasRotRefFrozen) {
+                                    refVec = gp_Vec(m_rotRefDirWorld);
+                                }
+                                else {
+                                    // 兜底：找一个与当前轴垂直的向量
+                                    refVec = gp_Vec(axisRotation).Crossed(gp_Vec(0, 0, 1));
+                                    if (refVec.SquareMagnitude() < 1e-12) {
+                                        refVec = gp_Vec(axisRotation).Crossed(gp_Vec(1, 0, 0));
+                                    }
+                                }
+                                if (refVec.SquareMagnitude() > 1e-12) refVec.Normalize();
+
+                                // 2) 用 deltaRotation 的等价轴角旋转 refVec，得到 refRot
+                                gp_Vec refRot = refVec;
+                                if (qAxis.SquareMagnitude() > 1e-12 && std::abs(qAngle) > 1e-12) {
+                                    gp_Ax1 axTmp(m_rotateAbsAnchorWorld, gp_Dir(qAxis));
+                                    // curLoc 取你已有的 pivot（你下面就有 curLoc）
+                                    refRot.Rotate(axTmp, qAngle);
+                                    if (refRot.SquareMagnitude() > 1e-12) refRot.Normalize();
+                                }
+
+                                // 3) 用 atan2 得到可正可负、且“能回退变短”的角度（范围 [-pi, pi]）
+                                double signedAngle = std::atan2(
+                                    axisRotation.Dot(refVec.Crossed(refRot)),
+                                    refVec.Dot(refRot)
+                                );
+
 
                                 // 【改】冻结/刷新 pivot：除了 axisIndex 变化，还要检测“操纵器位置是否变了”
                                 const gp_Pnt curLoc = m_aManipulator->Position().Location();
@@ -1246,7 +1394,7 @@ namespace Mayo {
                                     }
 
                                     m_rotOverlayLineLen = std::max<Standard_Real>(0.35 * viewDist, 80.0);
-                                    m_rotOverlayFlyout = m_rotOverlayLineLen * 1.2;   // 你现在用 1.2，就沿用
+                                    m_rotOverlayFlyout = m_rotOverlayLineLen * 0.8;   // 你现在用 1.2，就沿用
                                     m_hasRotOverlaySizeFrozen = true;
 
 
