@@ -289,10 +289,6 @@ namespace Mayo {
             m_rotLineAfter.Nullify();
         }
 
-        if (!m_rotAngleDim.IsNull()) {
-            ctx->Remove(m_rotAngleDim, Standard_False);
-            m_rotAngleDim.Nullify();
-        }
 
         if (!m_label.IsNull()) {
             ctx->Remove(m_label, Standard_False); // 移除旧轨迹的文字
@@ -319,8 +315,6 @@ namespace Mayo {
             return;
         }
 
-
-        tempAngle = endAngle;
 
         // ===== 新增：旋转轨迹/文字颜色跟随当前旋转轴（X/Y/Z） =====
         // 通过 rotationAxis.Direction() 与操纵器当前 Ax2 的 X/Y/Z 方向做 dot，取最接近的轴作为颜色来源
@@ -428,68 +422,6 @@ namespace Mayo {
         ctx->SetDisplayPriority(m_rotLineAfter, 11);
         ctx->Display(m_rotLineAfter, Standard_False);
 
-        //// 角度标注（类似你示例：PrsDim_AngleDimension(edge1, edge2)）
-        //m_rotAngleDim = new PrsDim_AngleDimension(edgeBefore, edgeAfter);
-
-        //Handle(Prs3d_DimensionAspect) dimensionAspect = new Prs3d_DimensionAspect();
-        //dimensionAspect->MakeArrows3d(Standard_False);
-        //dimensionAspect->MakeText3d(Standard_False);          // false：用 2D 文本显示
-        //dimensionAspect->TextAspect()->SetHeight(0.0);
-        //dimensionAspect->MakeTextShaded(false);
-        //
-        //// 颜色：圆弧 + 文字 跟随旋转轴颜色（与 m_rotLineAfter 一致）
-        //dimensionAspect->SetCommonColor(trajColor);
-
-        //dimensionAspect->MakeUnitsDisplayed(false);
-
-        //m_rotAngleDim->SetDisplayUnits("deg");
-        //m_rotAngleDim->SetDimensionAspect(dimensionAspect);
-
-        //// -----------------------------
-        //// 1) 让“标注圆弧”比默认更大一点（Flyout 越大，圆弧半径越大）
-        //// -----------------------------
-        ////const Standard_Real flyout = lineLen * 1.2;   // 你现在没设flyout；0.80~0.95 都可微调
-        //m_rotAngleDim->SetFlyout(flyout);
-
-
-        //// -----------------------------
-        //// 2) 让数字在圆弧“里面”（圆弧在数字外侧）
-        ////    做法：把文字放到角平分线方向，并且半径 < flyout
-        //// -----------------------------
-        //auto normToPi = [](double a) {
-        //    while (a > M_PI) a -= 2.0 * M_PI;
-        //    while (a < -M_PI) a += 2.0 * M_PI;
-        //    return a;
-        //};
-
-
-        //// 角平分线方向（midAngle）
-        //const double delta = normToPi(endAngle - startAngle);
-        //const double midAngle = startAngle + 0.5 * delta;
-
-        //gp_Vec vMid = v0;
-        //vMid.Rotate(rotationAxis, midAngle);
-        //if (vMid.SquareMagnitude() > 1e-12) {
-        //    vMid.Normalize();
-        //}
-
-        //// textRadius 要小于 flyout：这样圆弧在数字外面
-        //const Standard_Real textRadius = flyout * 0.8;   // 0.65~0.80 可调：越小越靠内
-        //gp_Pnt textPos = center.Translated(vMid * textRadius);
-
-
-        //double signedAngleRad = normToPi(endAngle - startAngle);
-        //// 避免 -0.00
-        //if (std::abs(signedAngleRad) < 1e-10) signedAngleRad = 0.0;
-
-        //// SetCustomValue(Real) 以“模型单位”存储，显示时仍会按 SetDisplayUnits("deg") 做单位转换
-        ////m_rotAngleDim->SetCustomValue(signedAngleRad);  // 负值会显示为负角度 :contentReference[oaicite:2]{index=2}
-        ////m_rotAngleDim->SetCustomValue(TCollection_ExtendedString(""));
-        ///*m_rotAngleDim->SetTextPosition(textPos);*/
-
-        //m_rotAngleDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        ///*ctx->SetDisplayPriority(m_rotAngleDim, 12);*/
-        //ctx->Display(m_rotAngleDim, Standard_False);
 
         // ==========================================================
         // 【替代方案】自绘固定半径圆弧（不使用 PrsDim_AngleDimension，彻底去掉外圈不可选数字）
@@ -607,10 +539,7 @@ namespace Mayo {
             ctx->Remove(m_rotLineAfter, Standard_False);
             m_rotLineAfter.Nullify();
         }
-        if (!m_rotAngleDim.IsNull()) {
-            ctx->Remove(m_rotAngleDim, Standard_False);
-            m_rotAngleDim.Nullify();
-        }
+
 
         if (!m_rotArc.IsNull()) {
             ctx->Remove(m_rotArc, Standard_False);
@@ -638,6 +567,7 @@ namespace Mayo {
             ctx->Remove(m_translateDim, Standard_False); // 移除旧轨迹的文字
             m_translateDim.Nullify();
         }
+
 
 
         if (!m_rolabel.IsNull()) {
@@ -684,10 +614,7 @@ namespace Mayo {
             ctx->Remove(m_rotLineAfter, Standard_False);
             m_rotLineAfter.Nullify();
         }
-        if (!m_rotAngleDim.IsNull()) {
-            ctx->Remove(m_rotAngleDim, Standard_False);
-            m_rotAngleDim.Nullify();
-        }
+
 
 
         // 创建直线几何
@@ -998,10 +925,7 @@ namespace Mayo {
                         ctx->Remove(m_rotLineAfter, Standard_False);
                         m_rotLineAfter.Nullify();
                     }
-                    if (!m_rotAngleDim.IsNull()) {
-                        ctx->Remove(m_rotAngleDim, Standard_False);
-                        m_rotAngleDim.Nullify();
-                    }
+
                     if (!m_rolabel.IsNull()) {
                         ctx->Remove(m_rolabel, Standard_False);
                         m_rolabel.Nullify();
@@ -1484,7 +1408,7 @@ namespace Mayo {
         if (!hadDynamicAction)
             this->signalMouseButtonClicked.send(fnOccMouseBtn(event->button()));
 
-        if (m_context && (!m_translateDim.IsNull() || !m_rotAngleDim.IsNull() || !m_rolabel.IsNull())) {
+        if (m_context && (!m_translateDim.IsNull() || !m_rolabel.IsNull())) {
 
 
             m_context->InitSelected();
@@ -1525,9 +1449,6 @@ namespace Mayo {
 
 
                         gp_Pnt labelPnt = m_aManipulator->Position().Location();
-                        if (m_hasTranslateDimTextPosWorld) {
-                            labelPnt = m_translateDimTextPosWorld;
-                        }
 
                         // OCCT 投影：世界坐标 -> 视口像素坐标
                         m_occView->v3dView()->Convert(labelPnt.X(), labelPnt.Y(), labelPnt.Z(), vx, vy);

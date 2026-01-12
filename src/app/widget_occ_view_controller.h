@@ -167,23 +167,18 @@ namespace Mayo {
         Handle(AIS_Shape) m_rotLineBefore;                  // 旋转前参考线
         Handle(AIS_Shape) m_rotLineAfter;                   // 旋转后参考线
         Handle(AIS_Shape) m_rotArc;                 // 【新增】自绘圆弧
-        Handle(PrsDim_AngleDimension) m_rotAngleDim;        // 角度标注
+
 
 
         // 缓存当前平移距离（用于双击标注时预填输入框）
         double m_translateDimValueMm = 0.0;
 
-        // 缓存标注文字位置（用于输入框定位）
-        gp_Pnt m_translateDimTextPosWorld;
-        bool m_hasTranslateDimTextPosWorld = false;
 
         Handle(AIS_Shape) arrowStart = nullptr;
         Handle(AIS_Shape) arrowEnd = nullptr;
         QLineEdit* m_editLine = nullptr;
 
 
-        gp_Ax1 tmpRotationAxis;
-        Standard_Real tempAngle;
 
         View3dNavigationStyle m_navigStyle = View3dNavigationStyle::Mayo;
         InputSequence m_inputSequence;
@@ -208,21 +203,21 @@ namespace Mayo {
 
         gp_XYZ m_axis;
 
-        int m_distanceAxisIndex = -1;  // ?? distance ???0=X,1=Y,2=Z
+        int m_distanceAxisIndex = -1;  // 记录当前 distance 对应的平移轴（0=X,1=Y,2=Z）
 
-        // --- ???? ---
+        // --- 平移辅助线的绝对起点 ---
         gp_Pnt m_translateAbsAnchorWorld;
         gp_Dir m_translateAbsAxisWorld;
         int    m_translateAbsAxisIndex = -1;   // 0/1/2
         bool   m_hasTranslateAbsAnchor = false;
 
 
-        // --- ??? ---
+        // --- 旋转辅助线的绝对起点 ---
         bool         m_hasRotateAbsAnchor = false;
-        gp_Pnt       m_rotateAbsAnchorWorld;   // pivot? manipulator  Location
-        gp_Dir       m_rotateAbsAxisWorld;     // ????
+        gp_Pnt       m_rotateAbsAnchorWorld;   // pivot（通常就是 manipulator 的 Location）
+        gp_Dir       m_rotateAbsAxisWorld;     // 当前冻结的旋转轴方向（世界坐标系）
         int          m_rotateAbsAxisIndex = -1;
-        Standard_Real m_rotateAbsAngleRad = 0.0; // ?????rad
+        Standard_Real m_rotateAbsAngleRad = 0.0; // 当前累计角（带符号，rad）
 
         // --- 旋转输入框会话冻结态（关键：避免输入框提交时串到别的轴） ---
         bool         m_hasRotEditFrozen = false;
@@ -233,25 +228,13 @@ namespace Mayo {
 
 
 
-
-
-        // 旋转角度数字在视口中的像素坐标（用于点击数字弹出输入框）
-        QPoint m_rotAngleTextVpPos;
-        bool   m_hasRotAngleTextVpPos = false;
-
-        // 旋转会话冻结：起始参考向量（黑线方向）
-        // 旋转过程中不会再重新计算，防止多轮旋转后起始线漂移
-        bool  m_hasRotateStartVec = false;
-        gp_Vec m_rotateStartVecWorld;   // 必须与旋转轴正交
-
-
         // 旋转“参考轴”冻结：保证黑色起始线永远沿“本次旋转开始前”的参考轴正方向（且不翻转）
         bool  m_hasRotRefFrozen = false;
-        int   m_rotRefOperationId = -1;      // 对应 m_lastOperation，用于区分多次操作
+        
         int   m_rotRefRotAxisIndex = -1;     // 当前绕哪根轴旋转(0/1/2)
         int   m_rotRefAxisIndex = -1;        // 用哪根轴做参考线(0/1/2) 例：绕绿Y -> 参考蓝Z
-        gp_Dir m_rotRefSeedDirWorld;         // 参考轴正方向（来自操纵器 Ax2）
-        gp_Vec m_rotRefVecWorld;             // 投影到旋转平面内的参考向量（单位向量）
+
+
         gp_Dir m_rotRefDirWorld;              // 参考轴在世界坐标下的方向（冻结）
 
         // --- 旋转叠加层尺寸冻结（避免 flyout/半径 抖动） ---
