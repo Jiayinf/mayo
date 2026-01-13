@@ -157,7 +157,6 @@ namespace Mayo {
         gp_Trsf m_initialRotation;
         int m_lastOperation = -1;
         Handle(AIS_Shape) m_trajectoryShape = nullptr;
-        Handle(AIS_TextLabel) m_label = nullptr;
         Handle(AIS_TextLabel) m_rolabel = nullptr;
         // 平移距离尺寸标注（独立于轨迹线的标注辅助线+箭头+文字）
         Handle(PrsDim_LengthDimension) m_translateDim = nullptr;
@@ -192,15 +191,11 @@ namespace Mayo {
         AIS_Manipulator::OptionsForAttach m_attachOption;
         int m_meshId;
 
-        Position m_lastManipulatorPos;
-
     private:
         /*static void dragStartCallback(void* data, SoDragger* d);
         static void dragFinishCallback(void* data, SoDragger* d);
         static void dragMotionCallback(void* data, SoDragger* d);*/
         gp_Pnt m_posTransform;
-
-        bool m_isFirstDisplay = true;
 
         gp_XYZ m_axis;
 

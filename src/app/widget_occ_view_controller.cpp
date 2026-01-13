@@ -40,12 +40,6 @@
 #include <Prs3d_DimensionAspect.hxx>
 
 
-//#include "SoFCCSysDragger.h"
-//using namespace Gui;
-
-//#include "SoFCCSysDragger.h"
-//using namespace Gui;
-
 namespace Mayo {
 
     namespace Internal {
@@ -187,7 +181,6 @@ namespace Mayo {
         m_attachOption.EnableModes = false;
 
         // 将操纵器附在创建的长方体上
-        //m_aManipulator->Attach(object, m_attachOption);
         m_aManipulator->Attach(m_aSequence, m_attachOption);
 
         gp_Ax2 tmpAx2;
@@ -197,10 +190,7 @@ namespace Mayo {
         // 启用指定的操纵模式
         m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // 启用移动
         m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // 启用旋转
-        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // 启用缩放
 
-        // 激活操纵器
-        //m_aManipulator->SetModeActivationOnDetection(Standard_True);
     }
 
     void Mayo::WidgetOccViewController::startManipulator(std::vector<GraphicsObjectPtr>& gfxObjects)
@@ -227,10 +217,7 @@ namespace Mayo {
         //// 启用指定的操纵模式
         m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Translation);  // 启用移动
         m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Rotation);     // 启用旋转
-        //m_aManipulator->EnableMode(AIS_ManipulatorMode::AIS_MM_Scaling);      // 启用缩放
 
-        // 激活操纵器
-        //m_aManipulator->SetModeActivationOnDetection(Standard_True);
     }
 
     void Mayo::WidgetOccViewController::setManipulatorReady(bool ready)
@@ -245,9 +232,8 @@ namespace Mayo {
 
     void Mayo::WidgetOccViewController::stopManipulator()
     {
-        // 
         m_aManipulator->SetModeActivationOnDetection(Standard_False);
-        //m_aManipulator->DeactivateCurrentMode();
+
         m_aManipulator->Detach();
 
         m_meshId = -1;
@@ -279,7 +265,7 @@ namespace Mayo {
             m_translateDim.Nullify();
         }
 
-        // 【新增】清理 OCC 旋转角度标注与两条线
+        // 清理 OCC 旋转角度标注与两条线
         if (!m_rotLineBefore.IsNull()) {
             ctx->Remove(m_rotLineBefore, Standard_False);
             m_rotLineBefore.Nullify();
@@ -287,12 +273,6 @@ namespace Mayo {
         if (!m_rotLineAfter.IsNull()) {
             ctx->Remove(m_rotLineAfter, Standard_False);
             m_rotLineAfter.Nullify();
-        }
-
-
-        if (!m_label.IsNull()) {
-            ctx->Remove(m_label, Standard_False); // 移除旧轨迹的文字
-            m_label.Nullify();
         }
 
         if (!m_rolabel.IsNull()) {
@@ -549,7 +529,7 @@ namespace Mayo {
             ctx->Remove(m_rolabel, Standard_False);
             m_rolabel.Nullify();
         }
-        ctx->UpdateCurrentViewer();
+
 
         
         // 在更新轨迹的函数中：
@@ -558,10 +538,6 @@ namespace Mayo {
             m_trajectoryShape.Nullify();
         }
 
-        //if (!m_label.IsNull()) {
-        //    ctx->Remove(m_label, Standard_False); // 移除旧轨迹的文字
-        //    m_label.Nullify();
-        //}
 
         if (!m_translateDim.IsNull()) {
             ctx->Remove(m_translateDim, Standard_False); // 移除旧轨迹的文字
@@ -590,11 +566,6 @@ namespace Mayo {
             m_translateDim.Nullify();
         }
 
-        if (!m_rolabel.IsNull()) {
-            ctx->Remove(m_rolabel, Standard_False);
-            m_rolabel.Nullify();
-        }
-
         if (!arrowStart.IsNull()) {
             ctx->Remove(arrowStart, Standard_False);
             arrowStart.Nullify();
@@ -604,18 +575,6 @@ namespace Mayo {
             ctx->Remove(arrowEnd, Standard_False);
             arrowEnd.Nullify();
         }
-
-        // 【新增】开始平移轨迹时，必须清理旋转辅助线与角度标注
-        if (!m_rotLineBefore.IsNull()) {
-            ctx->Remove(m_rotLineBefore, Standard_False);
-            m_rotLineBefore.Nullify();
-        }
-        if (!m_rotLineAfter.IsNull()) {
-            ctx->Remove(m_rotLineAfter, Standard_False);
-            m_rotLineAfter.Nullify();
-        }
-
-
 
         // 创建直线几何
         if (endPoint.IsEqual(startPoint, 1e-6)) {
@@ -677,9 +636,6 @@ namespace Mayo {
         // Keep a cache value (optional, can be used later for edit-box prefill)
         m_translateDimValueMm = signedDistance;
 
-        // Use a simple default plane (same as your reference snippet)
-        //gp_Pln pln;
-        //m_translateDim = new PrsDim_LengthDimension(edge, pln);
 
         Handle(Prs3d_DimensionAspect) dimensionAspect = new Prs3d_DimensionAspect();
         dimensionAspect->MakeArrows3d(true);   // 关键：确保箭头/标注线可见
@@ -741,26 +697,6 @@ namespace Mayo {
         m_translateDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
         ctx->Display(m_translateDim, Standard_True);
         ctx->UpdateCurrentViewer();
-
-
-
-        //m_translateDim->SetModelUnits("mm");
-        //m_translateDim->SetDisplayUnits("mm");
-        //m_translateDim->SetDimensionAspect(dimensionAspect);
-
-        //// Force a visible offset from the trajectory line (creates the parallel dimension line)
-        //const Standard_Real edgeLen = startPoint.Distance(endPoint);
-        //const Standard_Real flyout = std::max<Standard_Real>(20.0, std::min<Standard_Real>(edgeLen * 0.20, 120.0));
-        ////m_translateDim->SetFlyout(80.0);
-
-        //m_translateDim->SetZLayer(Graphic3d_ZLayerId_Topmost);
-        //ctx->SetDisplayPriority(m_translateDim, 12);
-        //ctx->Display(m_translateDim, Standard_True); // 关键：立即计算并显示
-        //ctx->UpdateCurrentViewer();                  // 关键：强制刷新
-
-
-        // NOTE: translation dimension is drawn by PrsDim_LengthDimension (dimension line + arrows + text)
-
 
         // ==============================================
 
@@ -1071,7 +1007,6 @@ namespace Mayo {
                     if (-1 != m_meshId)
                     {
                         float tmpMat[12] = { 0 };
-                        //simGetObjectMatrix_internal(m_meshId, -1, tmpMat);
                         gp_Ax2 tmpAx2;
                         occMatToAx2(tmpMat, tmpAx2);
                         m_aManipulator->SetPosition(tmpAx2);
@@ -1091,11 +1026,6 @@ namespace Mayo {
 
     void WidgetOccViewController::handleMouseMove(const QMouseEvent* event)
     {
-
-        /*if (m_editLine && (m_editLine->hasFocus() || m_editLine->text() != "")) {
-
-            return;
-        }*/
 
         if (m_editLine && m_editLine->isVisible()) {
             return;
@@ -1207,7 +1137,6 @@ namespace Mayo {
 
 
                                 gp_Quaternion deltaRotation = currentRotation.GetRotation() * m_initialRotation.GetRotation().Inverted();
-                                //if (deltaRotation.W() < 0) deltaRotation = -deltaRotation; // 统一为 w > 0 的表示
                                 static Standard_Real lastAngle = 0.0;
                                 gp_Vec axis;
                                 Standard_Real angle;
@@ -1439,8 +1368,6 @@ namespace Mayo {
 
                // 处理距离文本（平移）输入框
                 if (selected == m_translateDim) {
-                    // 例如 "12.345 mm"
-                    //QString currentText = QString::fromUtf16(m_label->Text().ToExtString());
 
                     const double oldDistanceMm = m_translateDimValueMm;
                     const QString numberPart = QString::number(oldDistanceMm, 'f', 3);
@@ -1712,12 +1639,9 @@ namespace Mayo {
                     if (!m_editLine) {
                         m_editLine = new QLineEdit(parentWidget); // 覆盖在 viewer 上
 
-                        //m_editLine = new QLineEdit(nullptr);  // 没有父控件，系统浮动窗口
-                        //m_editLine->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
+
                         m_editLine->setStyleSheet("background: white; color: black; border: 1px solid red;");
                         m_editLine->setAlignment(Qt::AlignCenter);
-                        //QDoubleValidator* validator = new QDoubleValidator(-359, 360, 0, this);
-                        //m_editLine->setValidator(validator);
                         m_editLine->setValidator(new QRegularExpressionValidator(QRegularExpression("^-?(360(\\.0+)?|([1-9]?\\d|[1-2]\\d{2}|3[0-5]\\d|359)(\\.\\d+)?|0(\\.\\d+)?)$")));
                         m_editLine->resize(80, 24);
                         m_editLine->setFrame(true);
@@ -1725,7 +1649,6 @@ namespace Mayo {
 
 
                         // 设置文本框位置
-                        //QStringList qlist = currentText.split(" ");
                         m_editLine->setText(currentText);
 
                         m_editLine->show();       // 显示
@@ -1862,9 +1785,7 @@ namespace Mayo {
         if (m_aManipulatorReady && m_aManipulatorDo)
         {
             int tmpActiveAxisIndex = m_aManipulator->ActiveAxisIndex();
-            //if (0 <= tmpActiveAxisIndex)
             {
-                //emit CGlobalEventSender::getInstance()->occManipulatorMoved();
 
                 m_aManipulator->StopTransform(Standard_True);	// 重置起始变换参数（函数参数为 Standard_False 则撤销本次的变换）
 
@@ -1881,7 +1802,6 @@ namespace Mayo {
                 if (-1 != m_meshId)
                 {
                     float tmpMat[12] = { 0 };
-                    //simGetObjectMatrix_internal(m_meshId, -1, tmpMat);
                     gp_Ax2 tmpAx2;
                     occMatToAx2(tmpMat, tmpAx2);
                     m_aManipulator->SetPosition(tmpAx2);
