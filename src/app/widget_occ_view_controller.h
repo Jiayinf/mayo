@@ -178,6 +178,7 @@ namespace Mayo {
         Handle(AIS_Shape) arrowEnd = nullptr;
         QLineEdit* m_editLine = nullptr;
 
+        bool m_pendingRotLabelClick = false;
 
 
         View3dNavigationStyle m_navigStyle = View3dNavigationStyle::Mayo;

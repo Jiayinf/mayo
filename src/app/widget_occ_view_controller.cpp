@@ -899,6 +899,20 @@ namespace Mayo {
         const QPoint currPos = m_occView->widget()->mapFromGlobal(event->globalPos());
         m_prevPos = toPosition(currPos);
 
+        // 【新增】如果是单击旋转角度文字（m_rolabel），不要启动操纵器变换，否则 release 时可能触发 StopTransform 导致 overlay 消失
+        if (event->button() == Qt::LeftButton && !m_rolabel.IsNull() && m_context && m_occView && m_occView->v3dView()) {
+            // 让 OCC 做一次检测
+            m_context->MoveTo(currPos.x(), currPos.y(), m_occView->v3dView(), Standard_True);
+            if (m_context->HasDetected()) {
+                Handle(AIS_InteractiveObject) detected = m_context->DetectedInteractive();
+                if (detected == m_rolabel) {
+                    m_pendingRotLabelClick = true;
+                    return; // 关键：不走 StartTransform，不走 m_aManipulatorDo 的逻辑
+                }
+            }
+        }
+
+
         if (m_aManipulatorReady)
         {
             int currentOperation = -1;
@@ -1413,7 +1427,14 @@ namespace Mayo {
 
             m_context->InitSelected();
             if (m_context->MoreSelected()) {
-                const Handle(AIS_InteractiveObject)& selected = m_context->SelectedInteractive();
+                Handle(AIS_InteractiveObject) selected = m_context->SelectedInteractive();
+
+                // 【新增】如果 press 阶段判定点到了角度标签，则 release 阶段强制按 m_rolabel 处理
+                if (m_pendingRotLabelClick) {
+                    selected = m_rolabel;
+                    m_pendingRotLabelClick = false;
+                }
+
 
 
                // 处理距离文本（平移）输入框
@@ -1579,10 +1600,6 @@ namespace Mayo {
 
                                 // 更新 label：显示新的总位移 b
                                 {
-                                    //QString text = QString("%1 mm").arg(newDistanceMm, 0, 'f', 3);
-                                    //m_label->SetText(TCollection_ExtendedString(text.toStdWString().c_str()));
-                                    //m_context->Redisplay(m_label, Standard_False);
-
                                     m_translateDimValueMm = newDistanceMm;
 
                                 }
