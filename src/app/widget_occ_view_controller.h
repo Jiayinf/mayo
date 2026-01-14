@@ -155,7 +155,12 @@ namespace Mayo {
         Position m_prevPos;
         gp_Pnt m_initialPosition;
         gp_Trsf m_initialRotation;
+
+        // 1/2/3 = 平移 X/Y/Z（Translation）
+        // 4/5/6 = 旋转 X/Y/Z（Rotation）
+        // 用于：模式切换时清理上一种 overlay；以及输入框会话冻结/恢复逻辑
         int m_lastOperation = -1;
+
         Handle(AIS_Shape) m_trajectoryShape = nullptr;
         Handle(AIS_TextLabel) m_rolabel = nullptr;
         // 平移距离尺寸标注（独立于轨迹线的标注辅助线+箭头+文字）
