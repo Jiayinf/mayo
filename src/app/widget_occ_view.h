@@ -19,7 +19,12 @@
 
 #include <functional>
 
+class AIS_InteractiveContext;
+class AIS_ColorScale;
+
 namespace Mayo {
+ 
+
 
 // Base interface for bridging Qt and OpenCascade 3D view
 // IWidgetOccView does not handle input devices interaction like keyboard and mouse
@@ -35,11 +40,32 @@ public:
     static void setCreator(Creator fn);
     static IWidgetOccView* create(const OccHandle<V3d_View>& view, QWidget* parent = nullptr);
 
+    // ---------- [新增] ColorScale 依赖注入与控制 ----------
+    void setAisContext(const OccHandle<AIS_InteractiveContext>& ctx) { m_aisContext = ctx; }
+    const OccHandle<AIS_InteractiveContext>& aisContext() const { return m_aisContext; }
+
+    void setColorScaleEnabled(bool on);
+    bool isColorScaleEnabled() const { return m_colorScaleEnabled; }
+
+    void setColorScaleRange(double vmin, double vmax); // 允许外部更新范围
+
 protected:
     IWidgetOccView(const OccHandle<V3d_View>& view) : m_view(view) {}
 
+    // 在窗口创建/resize 时调用，确保右侧 ColorScale 存在并更新
+    void initOrUpdateColorScale(const Graphic3d_Vec2i& viewSize);
+
 private:
     OccHandle<V3d_View> m_view;
+
+    // ---------- [新增] ColorScale 成员 ----------
+    OccHandle<AIS_InteractiveContext> m_aisContext;
+    OccHandle<AIS_ColorScale> m_colorScale;
+    bool m_colorScaleEnabled = false;
+
+    // 右侧标尺的尺寸（你可以按需要调整）
+    int m_colorScaleWidth = 50;
+    int m_colorScaleHeight = 200;
 };
 
 #if OCC_VERSION_HEX >= 0x070600

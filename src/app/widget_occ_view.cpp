@@ -18,6 +18,14 @@
 #  include <Aspect_NeutralWindow.hxx>
 #endif
 
+#include <AIS_ColorScale.hxx>
+#include <AIS_InteractiveContext.hxx>
+#include <Graphic3d_TransformPers.hxx>     
+#include <Graphic3d_ZLayerId.hxx>
+#include <Aspect_TypeOfColorScalePosition.hxx> // Aspect_TOCSP_*
+#include <Aspect_TypeOfTriedronPosition.hxx>   // Aspect_TOTP_*
+
+
 namespace Mayo {
 
 static IWidgetOccView::Creator& getWidgetOccViewCreator()
@@ -38,6 +46,81 @@ IWidgetOccView* IWidgetOccView::create(const OccHandle<V3d_View>& view, QWidget*
     const auto& fn = getWidgetOccViewCreator();
     return fn(view, parent);
 }
+
+
+void IWidgetOccView::setColorScaleEnabled(bool on)
+{
+    m_colorScaleEnabled = on;
+
+    // 关闭时：如果已经显示过，移除
+    if (!on) {
+        if (m_aisContext && !m_colorScale.IsNull()) {
+            m_aisContext->Remove(m_colorScale, true);
+        }
+        return;
+    }
+
+    // 打开时：如果 view 已经 ready，尽快创建并显示一次
+    if (this->v3dView() && !this->v3dView()->Window().IsNull()) {
+        Standard_Integer w = 0, h = 0;
+        this->v3dView()->Window()->Size(w, h);
+        this->initOrUpdateColorScale(Graphic3d_Vec2i(w, h));
+    }
+}
+
+void IWidgetOccView::setColorScaleRange(double vmin, double vmax)
+{
+    if (m_colorScale.IsNull())
+        return;
+
+    m_colorScale->SetRange(vmin, vmax);
+    m_colorScale->SetToUpdate();
+    if (m_aisContext)
+        m_aisContext->Redisplay(m_colorScale, true);
+}
+
+void IWidgetOccView::initOrUpdateColorScale(const Graphic3d_Vec2i& /*viewSize*/)
+{
+    if (!m_colorScaleEnabled)
+        return;
+
+    if (!m_aisContext)
+        return; // 没有 context 无法 Display/Redisplay
+
+    if (m_colorScale.IsNull()) {
+        m_colorScale = new AIS_ColorScale();
+
+        // 数值范围 / 分段
+        m_colorScale->SetRange(0.0, 1.0);
+        m_colorScale->SetNumberOfIntervals(10); // 注意：这里是“段数”，不是 0.1
+        m_colorScale->SetSmoothTransition(true);
+
+        // 外观：放在右侧时，标签建议在左边（避免文字跑出屏幕右边）
+        m_colorScale->SetLabelPosition(Aspect_TOCSP_LEFT);
+        m_colorScale->SetTextHeight(16);
+        m_colorScale->SetSize(m_colorScaleWidth, m_colorScaleHeight);
+
+        // 顶层 OSD
+        m_colorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+
+        // 固定到屏幕右侧：RIGHT 锚点 + 向左缩进 10px
+        Handle(Graphic3d_TransformPers) tr =
+            new Graphic3d_TransformPers(
+                Graphic3d_TMF_2d,
+                Aspect_TOTP_RIGHT,
+                Graphic3d_Vec2i(-10, 10)
+            );
+        m_colorScale->SetTransformPersistence(tr);
+
+        m_colorScale->SetToUpdate();
+        m_aisContext->Display(m_colorScale, false);
+    }
+
+    m_colorScale->SetToUpdate();
+    m_aisContext->Redisplay(m_colorScale, true);
+}
+
+
 
 #if OCC_VERSION_HEX >= 0x070600
 
@@ -137,11 +220,15 @@ void QOpenGLWidgetOccView::paintGL()
     const Graphic3d_Vec2i viewSizeNew = QOpenGLWidgetOccView_getDefaultframeBufferViewportSize(driver);
     auto window = OccHandle<Aspect_NeutralWindow>::DownCast(this->v3dView()->Window());
     window->Size(viewSizeOld.x(), viewSizeOld.y());
+    
     if (viewSizeNew != viewSizeOld) {
         window->SetSize(viewSizeNew.x(), viewSizeNew.y());
         this->v3dView()->MustBeResized();
         this->v3dView()->Invalidate();
     }
+
+    // ---------- [新增] QOpenGLWidget 路径下也刷新 ColorScale ----------
+    this->initOrUpdateColorScale(viewSizeNew);
 
     // Redraw the viewer
     //this->v3dView()->InvalidateImmediate();
@@ -191,6 +278,13 @@ void QWidgetOccView::showEvent(QShowEvent*)
 
         this->v3dView()->MustBeResized();
     }
+
+    // ---------- [新增] 确保右侧 ColorScale 创建/显示 ----------
+    if (!this->v3dView()->Window().IsNull()) {
+        Standard_Integer w = 0, h = 0;
+        this->v3dView()->Window()->Size(w, h);
+        this->initOrUpdateColorScale(Graphic3d_Vec2i(w, h));
+    }
 }
 
 void QWidgetOccView::paintEvent(QPaintEvent*)
@@ -202,6 +296,13 @@ void QWidgetOccView::resizeEvent(QResizeEvent* event)
 {
     if (!event->spontaneous()) // Workaround for infinite window shrink on Ubuntu
         this->v3dView()->MustBeResized();
+
+    // ---------- [新增] resize 时刷新 ColorScale（位置/排版） ----------
+    if (!this->v3dView()->Window().IsNull()) {
+        Standard_Integer w = 0, h = 0;
+        this->v3dView()->Window()->Size(w, h);
+        this->initOrUpdateColorScale(Graphic3d_Vec2i(w, h));
+    }
 }
 
 } // namespace Mayo

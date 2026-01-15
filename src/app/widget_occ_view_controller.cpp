@@ -130,6 +130,7 @@ namespace Mayo {
         m_actionMatcher(createActionMatcher(m_navigStyle, &m_inputSequence))
     {
         m_occView->widget()->installEventFilter(this);
+        m_occView->setColorScaleEnabled(true);
         m_inputSequence.setPrePushCallback([=](Input in) { m_actionMatcher->onInputPrePush(in); });
         m_inputSequence.setPreReleaseCallback([=](Input in) { m_actionMatcher->onInputPreRelease(in); });
         m_inputSequence.setClearCallback([=] { m_actionMatcher->onInputCleared(); });

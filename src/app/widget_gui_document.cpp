@@ -91,6 +91,13 @@ WidgetGuiDocument::WidgetGuiDocument(GuiDocument* guiDoc, QWidget* parent)
         layout->addWidget(m_qtOccView->widget());
     }
 
+    // [新增] 给 IWidgetOccView 注入 AIS Context，并启用 ColorScale（常显）
+    m_qtOccView->setAisContext(guiDoc->graphicsScene()->aisContextPtr());
+    m_qtOccView->setColorScaleEnabled(true);
+
+    // 可选：设置范围
+    m_qtOccView->setColorScaleRange(0.0, 1.0);
+
     auto widgetBtnsContents = new QWidget;
     auto layoutBtns = new QHBoxLayout(widgetBtnsContents);
     layoutBtns->setSpacing(Internal_widgetMargin + 2);
