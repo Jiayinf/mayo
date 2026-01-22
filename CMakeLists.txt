@@ -86,6 +86,8 @@ endif()
 # TODO Make option Mayo_BuildTests dependent of Mayo_BuildApp)
 option(Mayo_BuildApp "Build Mayo GUI application" ON)
 option(Mayo_BuildConvCli "Build Mayo CLI converter" ON)
+option(Mayo_BuildDemos "Build Mayo demo programs" ON)
+
 
 # TODO
 # option(Mayo_BuildPluginGmio "Build plugin to import/export mesh files supported by gmio" OFF)
@@ -514,6 +516,15 @@ file(
     ${PROJECT_SOURCE_DIR}/src/qtcommon/*.cpp
 )
 
+# ===== [ADD BEGIN] compile occInterfaces (fix LNK2019 occTrsfToMat/occMatToAx2) =====
+file(GLOB MayoOccInterfaces_SourceFiles
+    ${PROJECT_SOURCE_DIR}/src/occInterfaces/*.cpp
+)
+list(APPEND MayoApp_SourceFiles ${MayoOccInterfaces_SourceFiles})
+# ===== [ADD END] =====
+
+
+
 if(WIN32 AND QT_VERSION_MAJOR EQUAL 5)
     list(APPEND MayoApp_SourceFiles ${PROJECT_SOURCE_DIR}/src/app/windows/win_taskbar_global_progress.cpp)
 endif()
@@ -700,4 +711,12 @@ add_custom_target(
 if (EXISTS "${PROJECT_SOURCE_DIR}/cmake/CustomSteps.cmake")
     message(STATUS "File '${PROJECT_SOURCE_DIR}/cmake/CustomSteps.cmake' found...")
     include(${PROJECT_SOURCE_DIR}/cmake/CustomSteps.cmake)
+endif()
+
+
+##########
+# Demos
+##########
+if(Mayo_BuildDemos)
+    add_subdirectory(demos)
 endif()

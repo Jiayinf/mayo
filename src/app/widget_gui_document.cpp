@@ -32,6 +32,20 @@
 #include <Standard_Version.hxx>
 #include "../occInterfaces/occCommon.h"
 
+#include <QtCore/QTimer>
+
+#include <AIS_ColorScale.hxx>
+#include <AIS_InteractiveContext.hxx>
+#include <Graphic3d_TransformPers.hxx>
+#include <Graphic3d_ZLayerId.hxx>
+#include <Aspect_TypeOfColorScalePosition.hxx>
+#include <Aspect_TypeOfTriedronPosition.hxx>
+
+#include <QtWidgets/QLabel>
+
+#include <AIS_TextLabel.hxx>
+#include <TCollection_ExtendedString.hxx>
+
 
 namespace Mayo {
 
@@ -91,13 +105,6 @@ WidgetGuiDocument::WidgetGuiDocument(GuiDocument* guiDoc, QWidget* parent)
         layout->addWidget(m_qtOccView->widget());
     }
 
-    // [新增] 给 IWidgetOccView 注入 AIS Context，并启用 ColorScale（常显）
-    m_qtOccView->setAisContext(guiDoc->graphicsScene()->aisContextPtr());
-    m_qtOccView->setColorScaleEnabled(true);
-
-    // 可选：设置范围
-    m_qtOccView->setColorScaleRange(0.0, 1.0);
-
     auto widgetBtnsContents = new QWidget;
     auto layoutBtns = new QHBoxLayout(widgetBtnsContents);
     layoutBtns->setSpacing(Internal_widgetMargin + 2);
@@ -128,6 +135,29 @@ WidgetGuiDocument::WidgetGuiDocument(GuiDocument* guiDoc, QWidget* parent)
     layoutBtns->addWidget(m_btnMeasure);
     layoutBtns->addWidget(m_btnMove);
     m_widgetBtns = this->createWidgetPanelContainer(widgetBtnsContents);
+
+
+
+    // ---------------- [新增] ColorScale 开关按钮（底端靠右） ----------------
+    m_aisContext = m_guiDoc->graphicsScene()->aisContextPtr();
+
+    auto widgetColorScaleBtnContents = new QWidget;
+    auto layoutColorScaleBtn = new QHBoxLayout(widgetColorScaleBtnContents);
+    layoutColorScaleBtn->setContentsMargins(2, 2, 2, 2);
+    layoutColorScaleBtn->setSpacing(0);
+
+    m_btnColorScale = this->createViewBtn(widgetColorScaleBtnContents, Theme::Icon::Grid, tr("Color Scale"));
+    m_btnColorScale->setCheckable(true);
+    layoutColorScaleBtn->addWidget(m_btnColorScale);
+
+    m_widgetBtnColorScale = this->createWidgetPanelContainer(widgetColorScaleBtnContents);
+    this->layoutColorScaleButton();
+
+    QObject::connect(m_btnColorScale, &ButtonFlat::checked, this, &WidgetGuiDocument::toggleColorScale);
+
+
+
+
 
     auto gfxScene = m_guiDoc->graphicsScene();
     gfxScene->signalRedrawRequested.connectSlot([=](const OccHandle<V3d_View>& view) {
@@ -187,6 +217,12 @@ void WidgetGuiDocument::resizeEvent(QResizeEvent* event)
     this->layoutWidgetPanel(m_widgetClipPlanes);
     this->layoutWidgetPanel(m_widgetExplodeAsm);
     this->layoutWidgetPanel(m_widgetMeasure);
+
+    this->layoutColorScaleButton();
+
+    // 如果正在显示 ColorScale，resize 后触发一次更新
+    if (m_btnColorScale && m_btnColorScale->isChecked())
+        this->ensureColorScale();
 }
 
 QWidget* WidgetGuiDocument::createWidgetPanelContainer(QWidget* widgetContents)
@@ -486,5 +522,143 @@ void WidgetGuiDocument::layoutViewControls()
 
     m_widgetBtns->move(fnGetViewControlsPos());
 }
+
+
+
+
+// ===================== ColorScale implementation =====================
+
+void WidgetGuiDocument::toggleColorScale(bool on)
+{
+    if (on)
+        this->ensureColorScale();
+    else
+        this->removeColorScale();
+
+    // 组装调试信息（关键：不用 VS Output）
+    QString info;
+    info += QString("ColorScale toggle=%1\n").arg(on ? 1 : 0);
+    info += QString("aisCtx=%1\n").arg(m_aisContext ? "OK" : "NULL");
+    info += QString("colorScale=%1\n").arg(m_colorScale.IsNull() ? "NULL" : "OK");
+
+    bool displayed = false;
+    if (m_aisContext && !m_colorScale.IsNull())
+        displayed = m_aisContext->IsDisplayed(m_colorScale);
+    info += QString("IsDisplayed=%1\n").arg(displayed ? 1 : 0);
+
+    // 当前 view 的窗口尺寸
+    Standard_Integer vw = 0, vh = 0;
+    if (m_qtOccView && !m_qtOccView->v3dView().IsNull() && !m_qtOccView->v3dView()->Window().IsNull())
+        m_qtOccView->v3dView()->Window()->Size(vw, vh);
+    info += QString("ViewSize=%1x%2").arg(vw).arg(vh);
+
+    // 右下角 toast
+    auto* lab = new QLabel(info, this);
+    lab->setStyleSheet("QLabel{color:#fff;background:rgba(0,0,0,170);padding:8px;border-radius:6px;}");
+    lab->adjustSize();
+    lab->move(this->width() - lab->width() - 20, this->height() - lab->height() - 60);
+    lab->show();
+    QTimer::singleShot(2500, lab, &QWidget::deleteLater);
+
+    // 强制重绘
+    if (m_qtOccView && !m_qtOccView->v3dView().IsNull())
+        m_qtOccView->v3dView()->Redraw();
+}
+
+
+void WidgetGuiDocument::ensureColorScale()
+{
+    if (!m_aisContext) return;
+
+    if (m_colorScale.IsNull()) {
+        m_colorScale = new AIS_ColorScale();
+        m_colorScale->SetRange(0.0, 1.0);
+        m_colorScale->SetNumberOfIntervals(10);
+        m_colorScale->SetSmoothTransition(true);
+        m_colorScale->SetTextHeight(16);
+        m_colorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+        m_colorScale->SetSize(80, 320);
+    }
+
+    auto view = m_qtOccView ? m_qtOccView->v3dView() : OccHandle<V3d_View>{};
+    if (view.IsNull() || view->Window().IsNull())
+        return;
+
+    Standard_Integer vw = 0, vh = 0;
+    view->Window()->Size(vw, vh);
+
+    // 你希望更大就调这里
+    const int scaleW = 120;
+    const int scaleH = 420;
+    const int marginRight = 16;
+
+    // 右侧居中（绝对像素坐标）
+    const int x = std::max(0, int(vw) - scaleW - marginRight);
+    const int y = std::max(0, (int(vh) - scaleH) / 2);
+
+    m_colorScale->SetSize(scaleW, scaleH);
+    m_colorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+
+    // 关键：2D 屏幕坐标系固定（用 LEFT_LOWER + (x,y) 避免符号歧义）
+    Handle(Graphic3d_TransformPers) tr = new Graphic3d_TransformPers(
+        Graphic3d_TMF_2d,
+        Aspect_TOTP_LEFT_LOWER,
+        Graphic3d_Vec2i(x, y)
+    );
+    m_colorScale->SetTransformPersistence(tr);
+
+    // 不要再调用 SetPosition()，避免与 TransformPers 冲突
+
+
+    m_colorScale->SetToUpdate();
+
+    if (!m_aisContext->IsDisplayed(m_colorScale))
+        m_aisContext->Display(m_colorScale, true);
+    else
+        m_aisContext->Redisplay(m_colorScale, true);
+
+    // 先不要 Redraw()
+}
+
+
+
+void WidgetGuiDocument::removeColorScale()
+{
+    if (!m_aisContext)
+        m_aisContext = m_guiDoc->graphicsScene()->aisContextPtr();
+    if (!m_aisContext)
+        return;
+
+    if (!m_colorScale.IsNull()) {
+        m_aisContext->Remove(m_colorScale, true);  // true
+        if (m_qtOccView && !m_qtOccView->v3dView().IsNull())
+            m_qtOccView->v3dView()->Redraw();
+    }
+
+}
+
+void WidgetGuiDocument::layoutColorScaleButton()
+{
+    if (!m_widgetBtnColorScale)
+        return;
+
+    const int margin = Internal_widgetMargin + 2;
+
+    m_widgetBtnColorScale->adjustSize();
+    const QSize s = m_widgetBtnColorScale->size();
+
+    // 放在页面底端靠右
+    const int x = this->width() - s.width() - margin;
+    const int y = this->height() - s.height() - margin;
+
+    m_widgetBtnColorScale->move(x, y);
+    m_widgetBtnColorScale->raise();
+    m_widgetBtnColorScale->show();
+}
+
+
+
+
+
 
 } // namespace Mayo

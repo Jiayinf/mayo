@@ -14,6 +14,9 @@
 #include <V3d_TypeOfOrientation.hxx>
 #include <vector>
 
+#include "../base/occ_handle.h"
+class AIS_InteractiveContext;
+class AIS_ColorScale;
 
 namespace Mayo {
 
@@ -81,6 +84,18 @@ private:
     std::vector<QWidget*> m_vecWidgetForViewProj;
 
     std::vector<TGraphicsObjectExt> m_gfxObjExts;
+
+    // --- ColorScale toggle ---
+    void toggleColorScale(bool on);
+    void ensureColorScale();   // create + display (if needed)
+    void removeColorScale();   // remove from context
+    void layoutColorScaleButton();
+
+    ButtonFlat* m_btnColorScale = nullptr;
+    QWidget* m_widgetBtnColorScale = nullptr;
+
+    AIS_InteractiveContext* m_aisContext = nullptr;      // non-owning
+    OccHandle<AIS_ColorScale> m_colorScale;              // owning
 };
 
 } // namespace Mayo
